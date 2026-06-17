@@ -20,13 +20,13 @@
           "type": "美股"
         },
         {
-          "symbol": "2330.TW",
-          "name": "台積電",
+          "symbol": "0052.TW",
+          "name": "富邦科技",
           "type": "台股"
         },
         {
-          "symbol": "0052.TW",
-          "name": "富邦科技",
+          "symbol": "2330.TW",
+          "name": "台積電",
           "type": "台股"
         }
       ]
