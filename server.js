@@ -158,6 +158,44 @@ async function fetchTwFutureChart(symbol) {
   return result;
 }
 
+const twFutureHistoryCache = new Map();
+
+// 台指期歷史 K 線：Yahoo 台灣技術分析頁使用的 ApacLibraCharts API，
+// period=d/w/m 對應日/週/月 K，回傳結構與 fetchChart 一致。
+async function fetchTwFutureHistory(symbol, period = "d") {
+  const clean = cleanSymbol(symbol);
+  const key = `${clean}:${period}`;
+  const cached = twFutureHistoryCache.get(key);
+  if (cached && Date.now() - cached.time < 60000) return cached.result;
+  const symbols = JSON.stringify([clean]);
+  const params = new URLSearchParams({
+    bkt: "twhk-caas-nwapi", device: "desktop", ecma: "modern",
+    feature: "enableGAMAds,enableGAMEdgeToEdge,enableEvPlayer,enableTxnToken,useCG,useCGV2,enableNetworkApiValidate,useNetworkApi",
+    intl: "tw", lang: "zh-Hant-TW", partner: "none", prid: "stock-dashboard",
+    region: "TW", site: "finance", tz: "Asia/Taipei", ver: "1.4.883", returnMeta: "true",
+  });
+  const url = `https://tw.stock.yahoo.com/_td-stock/api/resource/FinanceChartService.ApacLibraCharts;period=${encodeURIComponent(period)};symbols=${encodeURIComponent(symbols)}?${params}`;
+  const res = await fetch(url, { headers: { "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36", "referer": `https://tw.stock.yahoo.com/quote/${encodeURIComponent(clean)}/technical-analysis` } });
+  if (!res.ok) throw new Error(`Yahoo TW history ${res.status}`);
+  const data = await res.json();
+  const chart = data.data?.[0]?.chart;
+  if (!chart || !chart.meta) throw new Error("no history data");
+
+  const quote = chart.indicators?.quote?.[0] || {};
+  const candles = (chart.timestamp || []).map((time, i) => ({
+    time: time * 1000,
+    open: numberOrNull(quote.open?.[i]),
+    high: numberOrNull(quote.high?.[i]),
+    low: numberOrNull(quote.low?.[i]),
+    close: numberOrNull(quote.close?.[i]),
+    volume: numberOrNull(quote.volume?.[i]),
+  })).filter(x => [x.open, x.high, x.low, x.close].every(v => Number.isFinite(v) && v > 0));
+
+  const result = { meta: chart.meta, candles };
+  twFutureHistoryCache.set(key, { time: Date.now(), result });
+  return result;
+}
+
 async function fetchChart(symbol, range = "1d", interval = "1m") {
   const clean = cleanSymbol(symbol);
   if (!clean) throw new Error("missing symbol");
@@ -316,7 +354,7 @@ async function detailResponse(symbol, name = "", type = "") {
   const twFut = isTwFuture(clean);
   const [{ meta, candles: intraday }, daily] = await Promise.all([
     fetchChart(clean, "1d", "5m"),
-    twFut ? Promise.resolve({ candles: [] }) : fetchChart(clean, "1y", "1d"),
+    twFut ? fetchTwFutureHistory(clean, "d") : fetchChart(clean, "1y", "1d"),
   ]);
   const quote = await fetchQuote({ symbol: clean, name, type });
   const dailyCandles = daily.candles;
