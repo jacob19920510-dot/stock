@@ -20,14 +20,34 @@
           "type": "美股"
         },
         {
-          "symbol": "0052.TW",
-          "name": "富邦科技",
-          "type": "台股"
-        },
-        {
           "symbol": "2330.TW",
           "name": "台積電",
           "type": "台股"
+        },
+        {
+          "symbol": "NVDA",
+          "name": "NVIDIA Corporation",
+          "type": "美股"
+        },
+        {
+          "symbol": "AAPL",
+          "name": "Apple Inc.",
+          "type": "美股"
+        },
+        {
+          "symbol": "META",
+          "name": "Meta Platforms, Inc.",
+          "type": "美股"
+        },
+        {
+          "symbol": "SPCX",
+          "name": "Space Exploration Technologies",
+          "type": "美股"
+        },
+        {
+          "symbol": "GOOG",
+          "name": "Alphabet Inc.",
+          "type": "美股"
         }
       ]
     },
@@ -64,6 +84,11 @@
     {
       "name": "期貨",
       "symbols": [
+        {
+          "symbol": "WTX&",
+          "name": "台指期近一",
+          "type": "期貨"
+        },
         {
           "symbol": "NQ=F",
           "name": "小納斯達克期貨",

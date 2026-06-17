@@ -129,6 +129,7 @@ config.json
 - 美股：`AAPL`、`VOO`、`QQQ`
 - 指數：`^TWII`、`^GSPC`、`^NDX`、`^DJI`、`^SOX`
 - 期貨：`NQ=F`、`ES=F`、`CL=F`、`GC=F`
+- 台灣期貨：`WTX&`（台指期近一）等 Yahoo 台灣期貨代號，代號含 `&` 者會自動改從 Yahoo 台灣頁面取資
 
 也可以直接在頁面搜尋股票後加入自選股。
 

@@ -37,7 +37,7 @@ function cleanSymbol(value) {
 function marketType(symbol, meta = {}) {
   if (symbol.endsWith(".TW") || symbol.endsWith(".TWO") || meta.exchangeName === "TAI" || meta.exchangeName === "TWO") return "台股";
   if (meta.instrumentType === "INDEX") return "指數";
-  if (meta.instrumentType === "FUTURE") return "期貨";
+  if (meta.instrumentType === "FUTURE" || meta.quoteType === "FUTURE_INDEX" || meta.exchange === "TFE") return "期貨";
   if (!symbol.includes(".")) return "美股";
   return "其他";
 }
@@ -103,9 +103,65 @@ async function twUniverse() {
   return items;
 }
 
+function isTwFuture(symbol) {
+  return String(symbol || "").includes("&");
+}
+
+function parseJsonObject(text, start) {
+  let depth = 0, inStr = false, esc = false;
+  for (let i = start; i < text.length; i++) {
+    const c = text[i];
+    if (inStr) { if (esc) esc = false; else if (c === "\\") esc = true; else if (c === '"') inStr = false; }
+    else { if (c === '"') inStr = true; else if (c === "{") depth++; else if (c === "}") { depth--; if (depth === 0) { try { return JSON.parse(text.slice(start, i + 1)); } catch { return null; } } } }
+  }
+  return null;
+}
+
+const twFutureCache = new Map();
+
+// Yahoo 國際版 chart API 不支援台灣期貨（如 WTX&），改從 Yahoo 台灣個股頁內嵌的
+// libra JSON 取得 meta 與分時 K 線，回傳結構與 fetchChart 一致。
+async function fetchTwFutureChart(symbol) {
+  const clean = cleanSymbol(symbol);
+  const cached = twFutureCache.get(clean);
+  if (cached && Date.now() - cached.time < 30000) return cached.result;
+  const url = `https://tw.stock.yahoo.com/quote/${encodeURIComponent(clean)}`;
+  const res = await fetch(url, { headers: { "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" } });
+  if (!res.ok) throw new Error(`Yahoo TW ${res.status}`);
+  const html = await res.text();
+  const libraIdx = html.indexOf('"libra":{');
+  if (libraIdx < 0) throw new Error("no libra data");
+  const libra = parseJsonObject(html, libraIdx + '"libra":'.length);
+  const data = libra && libra[clean];
+  if (!data || !data.meta) throw new Error("no quote");
+
+  const quote = data.indicators?.quote?.[0] || {};
+  const candles = (data.timestamp || []).map((time, i) => ({
+    time: time * 1000,
+    open: numberOrNull(quote.open?.[i]),
+    high: numberOrNull(quote.high?.[i]),
+    low: numberOrNull(quote.low?.[i]),
+    close: numberOrNull(quote.close?.[i]),
+    volume: numberOrNull(quote.volume?.[i]),
+  })).filter(x => [x.open, x.high, x.low, x.close].every(v => Number.isFinite(v) && v > 0));
+
+  const meta = { ...data.meta };
+  if (candles.length) {
+    meta.regularMarketOpen = candles[0].open;
+    meta.regularMarketDayHigh = Math.max(...candles.map(c => c.high));
+    meta.regularMarketDayLow = Math.min(...candles.map(c => c.low));
+    meta.regularMarketVolume = candles.reduce((sum, c) => sum + (Number.isFinite(c.volume) ? c.volume : 0), 0);
+  }
+
+  const result = { meta, candles };
+  twFutureCache.set(clean, { time: Date.now(), result });
+  return result;
+}
+
 async function fetchChart(symbol, range = "1d", interval = "1m") {
   const clean = cleanSymbol(symbol);
   if (!clean) throw new Error("missing symbol");
+  if (isTwFuture(clean)) return fetchTwFutureChart(clean);
   const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(clean)}?interval=${encodeURIComponent(interval)}&range=${encodeURIComponent(range)}`;
   const res = await fetch(url, { headers: { "user-agent": "stock-dashboard/1.0" } });
   if (!res.ok) throw new Error(`Yahoo ${res.status}`);
@@ -144,7 +200,7 @@ async function fetchQuote(item) {
   const isTw = symbol.endsWith(".TW") || symbol.endsWith(".TWO");
 
   return {
-    name: isTw ? (hasChinese(item.name) ? item.name : await twName(symbol)) || item.name || meta.shortName || symbol : item.name || meta.shortName || symbol,
+    name: isTw ? (hasChinese(item.name) ? item.name : await twName(symbol)) || item.name || meta.shortName || symbol : item.name || meta.shortName || meta.name || symbol,
     symbol,
     type: item.type || marketType(symbol, meta),
     price,
@@ -154,7 +210,7 @@ async function fetchQuote(item) {
     shares: Number(item.shares),
     cost: Number(item.cost),
     currency: meta.currency || "",
-    market: meta.exchangeName || "",
+    market: meta.exchangeName || meta.exchange || "",
     updatedAt,
     ok: true,
   };
@@ -257,9 +313,10 @@ function twSearchRank(code, query, name = "", raw = "") {
 
 async function detailResponse(symbol, name = "", type = "") {
   const clean = cleanSymbol(symbol);
+  const twFut = isTwFuture(clean);
   const [{ meta, candles: intraday }, daily] = await Promise.all([
     fetchChart(clean, "1d", "5m"),
-    fetchChart(clean, "1y", "1d"),
+    twFut ? Promise.resolve({ candles: [] }) : fetchChart(clean, "1y", "1d"),
   ]);
   const quote = await fetchQuote({ symbol: clean, name, type });
   const dailyCandles = daily.candles;
