@@ -1,0 +1,95 @@
+{
+  "refreshSeconds": 5,
+  "groups": [
+    {
+      "name": "自選股",
+      "symbols": [
+        {
+          "symbol": "0050.TW",
+          "name": "元大台灣50",
+          "type": "台股"
+        },
+        {
+          "symbol": "2408.TW",
+          "name": "南亞科",
+          "type": "台股"
+        },
+        {
+          "symbol": "6770.TW",
+          "name": "力積電",
+          "type": "台股"
+        },
+        {
+          "symbol": "VOO",
+          "name": "Vanguard S&P 500 ETF",
+          "type": "美股"
+        },
+        {
+          "symbol": "QQQ",
+          "name": "Invesco QQQ Trust, Series 1",
+          "type": "美股"
+        },
+        {
+          "symbol": "VT",
+          "name": "Vanguard Total World Stock Inde",
+          "type": "美股"
+        }
+      ]
+    },
+    {
+      "name": "指數",
+      "symbols": [
+        {
+          "symbol": "^TWII",
+          "name": "台灣加權指數",
+          "type": "指數"
+        },
+        {
+          "symbol": "^GSPC",
+          "name": "標普500指數",
+          "type": "指數"
+        },
+        {
+          "symbol": "^NDX",
+          "name": "納斯達克100指數",
+          "type": "指數"
+        },
+        {
+          "symbol": "^DJI",
+          "name": "道瓊指數",
+          "type": "指數"
+        },
+        {
+          "symbol": "^SOX",
+          "name": "費城半導體指數",
+          "type": "指數"
+        }
+      ]
+    },
+    {
+      "name": "期貨",
+      "symbols": [
+        {
+          "symbol": "NQ=F",
+          "name": "小納斯達克期貨",
+          "type": "期貨"
+        },
+        {
+          "symbol": "ES=F",
+          "name": "標普500期貨",
+          "type": "期貨"
+        },
+        {
+          "symbol": "CL=F",
+          "name": "原油期貨",
+          "type": "期貨"
+        },
+        {
+          "symbol": "GC=F",
+          "name": "黃金期貨",
+          "type": "期貨"
+        }
+      ]
+    }
+  ]
+}
