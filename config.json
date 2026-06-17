@@ -10,16 +10,6 @@
           "type": "台股"
         },
         {
-          "symbol": "2408.TW",
-          "name": "南亞科",
-          "type": "台股"
-        },
-        {
-          "symbol": "6770.TW",
-          "name": "力積電",
-          "type": "台股"
-        },
-        {
           "symbol": "VOO",
           "name": "Vanguard S&P 500 ETF",
           "type": "美股"
@@ -30,9 +20,14 @@
           "type": "美股"
         },
         {
-          "symbol": "VT",
-          "name": "Vanguard Total World Stock Inde",
-          "type": "美股"
+          "symbol": "2330.TW",
+          "name": "台積電",
+          "type": "台股"
+        },
+        {
+          "symbol": "0052.TW",
+          "name": "富邦科技",
+          "type": "台股"
         }
       ]
     },
