@@ -30,8 +30,33 @@
           "type": "美股"
         },
         {
-          "symbol": "SPY",
-          "name": "State Street SPDR S&P 500 ETF T",
+          "symbol": "TQQQ",
+          "name": "ProShares UltraPro QQQ",
+          "type": "美股"
+        },
+        {
+          "symbol": "SQQQ",
+          "name": "ProShares UltraPro Short QQQ",
+          "type": "美股"
+        },
+        {
+          "symbol": "QQQM",
+          "name": "Invesco NASDAQ 100 ETF",
+          "type": "美股"
+        },
+        {
+          "symbol": "QQQI",
+          "name": "NEOS Nasdaq 100 High Income ETF",
+          "type": "美股"
+        },
+        {
+          "symbol": "QLD",
+          "name": "ProShares Ultra QQQ",
+          "type": "美股"
+        },
+        {
+          "symbol": "PSQ",
+          "name": "ProShares Short QQQ",
           "type": "美股"
         }
       ]
