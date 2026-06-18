@@ -32,10 +32,18 @@ function cleanSymbol(value) {
 
 function marketType(symbol, meta = {}) {
   if (symbol.endsWith(".TW") || symbol.endsWith(".TWO") || meta.exchangeName === "TAI" || meta.exchangeName === "TWO") return "\u53f0\u80a1";
+  if (symbol.startsWith("^")) return "\u6307\u6578";
+  if (symbol.endsWith("=F") || symbol.includes("&")) return "\u671f\u8ca8";
   if (meta.instrumentType === "INDEX") return "\u6307\u6578";
   if (meta.instrumentType === "FUTURE" || meta.quoteType === "FUTURE_INDEX" || meta.exchange === "TFE") return "\u671f\u8ca8";
   if (!symbol.includes(".")) return "\u7f8e\u80a1";
   return "\u5176\u4ed6";
+}
+
+function canWatch(type, symbol) {
+  if (symbol.startsWith("^") || symbol.endsWith("=F") || symbol.includes("&")) return false;
+  const kind = String(type || marketType(symbol)).trim();
+  return kind !== "\u6307\u6578" && kind !== "\u671f\u8ca8";
 }
 
 async function readBody(req) {
@@ -48,6 +56,8 @@ async function addWatchSymbol(req) {
   const body = await readBody(req);
   const symbol = cleanSymbol(body.symbol);
   if (!symbol) throw new Error("missing symbol");
+  const type = String(body.type || marketType(symbol)).trim().slice(0, 20);
+  if (!canWatch(type, symbol)) throw new Error("cannot add this type to watchlist");
 
   const config = await readConfig();
   const group = watchlist(config);
@@ -55,7 +65,7 @@ async function addWatchSymbol(req) {
     group.symbols.push({
       symbol,
       name: String(body.name || symbol).trim().slice(0, 80),
-      type: String(body.type || marketType(symbol)).trim().slice(0, 20),
+      type,
     });
     await writeConfig(config);
   }

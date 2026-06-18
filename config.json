@@ -15,28 +15,13 @@
           "type": "台股"
         },
         {
-          "symbol": "00981A.TW",
-          "name": "主動統一台股增長",
-          "type": "台股"
-        },
-        {
           "symbol": "00403A.TW",
           "name": "主動統一升級50",
           "type": "台股"
         },
         {
-          "symbol": "7723.TWO",
-          "name": "築間",
-          "type": "台股"
-        },
-        {
           "symbol": "QQQ",
           "name": "Invesco QQQ Trust, Series 1",
-          "type": "美股"
-        },
-        {
-          "symbol": "QQQM",
-          "name": "Invesco NASDAQ 100 ETF",
           "type": "美股"
         },
         {
@@ -52,11 +37,6 @@
         {
           "symbol": "NVDA",
           "name": "NVIDIA Corporation",
-          "type": "美股"
-        },
-        {
-          "symbol": "AAPL",
-          "name": "Apple Inc.",
           "type": "美股"
         }
       ]

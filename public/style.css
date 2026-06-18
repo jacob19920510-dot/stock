@@ -44,7 +44,7 @@ tbody tr { cursor:pointer; }
 tbody tr:hover { background:rgba(91,140,255,.10); }
 tbody tr.dragging { opacity:.45; }
 tbody tr.drag-over { outline:1px solid var(--blue); outline-offset:-1px; }
-.up { color:var(--red); } .down { color:var(--green); } .danger { color:var(--red); }
+.up { color:var(--red); } .down { color:var(--green); } .small-btn.danger, .danger { color:var(--red); }
 .detail-layer { display:none; position:fixed; inset:0; z-index:20; padding:4vh 4vw; background:rgba(2,8,18,.72); backdrop-filter:blur(5px); }
 body.detail-open .detail-layer { display:grid; place-items:center; animation:fadeIn .18s ease both; }
 .detail { width:min(1260px,92vw); max-height:92vh; overflow:auto; transform-origin:center center; border:1px solid color-mix(in srgb, var(--line) 70%, transparent); border-radius:12px; background:linear-gradient(180deg,color-mix(in srgb,var(--panel) 96%,#fff 4%),var(--panel)); box-shadow:0 30px 90px rgba(0,0,0,.42); }
