@@ -69,6 +69,28 @@ async function fetchTwFutureChart(symbol) {
 }
 
 const twFutureHistoryCache = new Map();
+const rankingsCache = new Map();
+
+const RANKING_UNIVERSE = {
+  tw: [
+    ["2330.TW", "台積電"], ["2454.TW", "聯發科"], ["2317.TW", "鴻海"], ["2308.TW", "台達電"],
+    ["2412.TW", "中華電"], ["2881.TW", "富邦金"], ["2882.TW", "國泰金"], ["2891.TW", "中信金"],
+    ["2303.TW", "聯電"], ["3711.TW", "日月光投控"], ["2603.TW", "長榮"], ["1216.TW", "統一"],
+    ["6669.TW", "緯穎"], ["3037.TW", "欣興"], ["2355.TW", "敬鵬"],
+  ],
+  us: [
+    ["NVDA", "NVIDIA"], ["AAPL", "Apple"], ["MSFT", "Microsoft"], ["AMZN", "Amazon"],
+    ["META", "Meta"], ["GOOGL", "Alphabet"], ["TSLA", "Tesla"], ["AVGO", "Broadcom"],
+    ["AMD", "AMD"], ["NFLX", "Netflix"], ["QQQ", "Invesco QQQ ETF"], ["SPY", "SPDR S&P 500 ETF"],
+  ],
+};
+
+const GLOBAL_INDEX_UNIVERSE = [
+  ["^TWII", "台灣加權指數"], ["^GSPC", "標普500指數"], ["^NDX", "納斯達克100指數"],
+  ["^DJI", "道瓊指數"], ["^SOX", "費城半導體指數"], ["^N225", "日經225指數"],
+  ["^HSI", "香港恆生指數"], ["^FTSE", "英國富時100指數"], ["^GDAXI", "德國DAX指數"],
+  ["^FCHI", "法國CAC40指數"],
+];
 
 // 台指期歷史 K 線：Yahoo 台灣技術分析頁使用的 ApacLibraCharts API，
 // period=d/w/m 對應日/週/月 K，回傳結構與 fetchChart 一致。
@@ -185,6 +207,48 @@ async function quotesResponse() {
     return { name: group.name || "未命名", editable: group.name === "自選股", quotes };
   }));
   return { refreshSeconds: config.refreshSeconds, fetchedAt: new Date().toISOString(), groups };
+}
+
+async function rankingResponse() {
+  const [tw, us, global] = await Promise.all([
+    rankingMarket("tw"),
+    rankingMarket("us"),
+    rankingGlobal(),
+  ]);
+  return { fetchedAt: new Date().toISOString(), markets: { tw, us }, global };
+}
+
+async function rankingMarket(market) {
+  return cachedRanking(`market:${market}`, async () => {
+    const quotes = await fetchRankingQuotes(RANKING_UNIVERSE[market] || []);
+    return {
+      gainers: quotes.filter(x => Number.isFinite(x.changePercent)).sort((a, b) => b.changePercent - a.changePercent),
+      losers: quotes.filter(x => Number.isFinite(x.changePercent)).sort((a, b) => a.changePercent - b.changePercent),
+      volume: quotes.filter(x => Number.isFinite(x.volume)).sort((a, b) => b.volume - a.volume),
+    };
+  });
+}
+
+async function rankingGlobal() {
+  return cachedRanking("global", async () => {
+    const quotes = await fetchRankingQuotes(GLOBAL_INDEX_UNIVERSE);
+    return quotes.filter(x => Number.isFinite(x.changePercent)).sort((a, b) => b.changePercent - a.changePercent);
+  });
+}
+
+async function cachedRanking(key, loader) {
+  const cached = rankingsCache.get(key);
+  if (cached && Date.now() - cached.time < 30000) return cached.value;
+  const value = await loader();
+  rankingsCache.set(key, { time: Date.now(), value });
+  return value;
+}
+
+async function fetchRankingQuotes(items) {
+  const quotes = await Promise.all(items.map(async ([symbol, name]) => {
+    try { return await fetchQuote({ symbol, name }); } catch { return null; }
+  }));
+  return quotes.filter(Boolean);
 }
 
 async function yahooSearch(market, query) {
@@ -325,6 +389,7 @@ module.exports = {
   fetchChart,
   fetchQuote,
   quotesResponse,
+  rankingResponse,
   yahooSearch,
   detailResponse,
 };

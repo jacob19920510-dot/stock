@@ -3,7 +3,7 @@ const fs = require("node:fs/promises");
 const path = require("node:path");
 
 const { readConfig, addWatchSymbol, removeWatchSymbol, reorderWatchSymbols } = require("./config");
-const { quotesResponse, yahooSearch, detailResponse } = require("./services/yahoo");
+const { quotesResponse, rankingResponse, yahooSearch, detailResponse } = require("./services/yahoo");
 const { twUniverse } = require("./services/twse");
 
 const PORT = Number(process.env.PORT || 8000);
@@ -67,6 +67,7 @@ const server = http.createServer(async (req, res) => {
     const url = new URL(req.url, `http://${req.headers.host}`);
     if (req.method === "GET" && url.pathname === "/api/config") return json(res, 200, await readConfig());
     if (req.method === "GET" && url.pathname === "/api/quotes") return json(res, 200, await quotesResponse());
+    if (req.method === "GET" && url.pathname === "/api/rankings") return json(res, 200, await rankingResponse());
     if (req.method === "GET" && url.pathname === "/api/search") return json(res, 200, await yahooSearch(url.searchParams.get("market"), url.searchParams.get("q")));
     if (req.method === "GET" && url.pathname === "/api/detail") return json(res, 200, await detailResponse(url.searchParams.get("symbol"), url.searchParams.get("name"), url.searchParams.get("type")));
     if (req.method === "POST" && url.pathname === "/api/watchlist/add") return json(res, 200, await addWatchSymbol(req));

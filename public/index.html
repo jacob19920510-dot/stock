@@ -20,10 +20,19 @@
         <div class="panel-head"><h2 id="marketWindTitle">市場風向</h2></div>
         <div class="wind-cards" id="windCards"></div>
       </section>
-      <div class="focus-grid"><section class="panel" id="watchPanel"></section></div>
+      <div class="focus-grid">
+        <section class="panel" id="watchPanel"></section>
+        <div class="rankings-grid">
+          <section class="panel rank-panel" id="gainRankPanel"></section>
+          <section class="panel rank-panel" id="lossRankPanel"></section>
+          <section class="panel rank-panel" id="volumeRankPanel"></section>
+          <section class="panel rank-panel" id="globalRankPanel"></section>
+        </div>
+      </div>
       <div class="bottom-grid"><section class="panel" id="indexPanel"></section><section class="panel" id="futurePanel"></section></div>
     </main>
     <div class="detail-layer" id="detailLayer"><section class="detail" id="detail"></section></div>
+    <div class="rank-layer" id="rankLayer"><section class="rank-modal" id="rankModal"></section></div>
   </div>
   <script src="/app.js"></script>
 </body>
