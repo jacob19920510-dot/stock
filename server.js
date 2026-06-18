@@ -28,6 +28,9 @@ async function serveStatic(res, pathname) {
     ".html": "text/html; charset=utf-8",
     ".css": "text/css; charset=utf-8",
     ".js": "text/javascript; charset=utf-8",
+    ".svg": "image/svg+xml",
+    ".png": "image/png",
+    ".ico": "image/x-icon",
   };
   if (!types[ext]) return send(res, 404, "Not found", "text/plain; charset=utf-8");
 
