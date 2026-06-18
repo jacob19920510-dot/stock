@@ -1,5 +1,6 @@
 const twNameCache = new Map();
 let twUniverseCache = null;
+let twSharesCache = null;
 
 function cleanSymbol(value) {
   return String(value || "").trim().toUpperCase().slice(0, 24);
@@ -66,9 +67,36 @@ async function twUniverse() {
   return items;
 }
 
+async function twSharesOutstanding() {
+  if (twSharesCache && Date.now() - twSharesCache.time < 86400000) return twSharesCache.items;
+  const [listed, tpex] = await Promise.all([
+    fetch("https://openapi.twse.com.tw/v1/opendata/t187ap03_L", { headers: { "user-agent": "stock-dashboard/1.0" } }).then(r => r.ok ? r.json() : []),
+    fetch("https://www.tpex.org.tw/openapi/v1/mopsfin_t187ap03_O", { headers: { "user-agent": "stock-dashboard/1.0" } }).then(r => r.ok ? r.json() : []),
+  ]);
+  const items = new Map();
+  for (const item of Array.isArray(listed) ? listed : []) {
+    const code = String(item["公司代號"] || "").trim().toUpperCase();
+    const shares = numberOrNull(item["已發行普通股數或TDR原股發行股數"]);
+    if (/^[0-9A-Z]{4,6}$/.test(code) && Number.isFinite(shares) && shares > 0) items.set(`${code}.TW`, shares);
+  }
+  for (const item of Array.isArray(tpex) ? tpex : []) {
+    const code = String(item.SecuritiesCompanyCode || "").trim().toUpperCase();
+    const shares = numberOrNull(item.IssueShares);
+    if (/^[0-9A-Z]{4,6}$/.test(code) && Number.isFinite(shares) && shares > 0) items.set(`${code}.TWO`, shares);
+  }
+  twSharesCache = { time: Date.now(), items };
+  return items;
+}
+
+function numberOrNull(value) {
+  const n = Number(String(value ?? "").replace(/,/g, "").trim());
+  return Number.isFinite(n) ? n : null;
+}
+
 module.exports = {
   hasChinese,
   twseCodeQuery,
   twName,
   twUniverse,
+  twSharesOutstanding,
 };

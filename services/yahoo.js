@@ -1,5 +1,5 @@
 const { readConfig } = require("../config");
-const { hasChinese, twName, twUniverse, twseCodeQuery } = require("./twse");
+const { hasChinese, twName, twUniverse, twseCodeQuery, twSharesOutstanding } = require("./twse");
 
 function cleanSymbol(value) {
   return String(value || "").trim().toUpperCase().slice(0, 24);
@@ -70,6 +70,34 @@ async function fetchTwFutureChart(symbol) {
 
 const twFutureHistoryCache = new Map();
 const rankingsCache = new Map();
+
+const GLOBAL_INDEX_RANKING_UNIVERSE = [
+  ["^TWII", "\u53f0\u7063\u52a0\u6b0a\u6307\u6578"], ["^DJI", "\u9053\u74ca\u5de5\u696d\u6307\u6578"], ["^GSPC", "S&P 500\u6307\u6578"],
+  ["^IXIC", "NASDAQ\u7d9c\u5408\u6307\u6578"], ["^NDX", "NASDAQ 100\u6307\u6578"], ["^SOX", "\u8cbb\u57ce\u534a\u5c0e\u9ad4\u6307\u6578"],
+  ["^N225", "\u65e5\u7d93225\u6307\u6578"], ["^HSI", "\u9999\u6e2f\u6046\u751f\u6307\u6578"], ["000001.SS", "\u4e0a\u6d77\u7d9c\u5408\u6307\u6578"],
+  ["399001.SZ", "\u6df1\u5733\u7d9c\u5408\u6307\u6578"], ["^KS11", "\u97d3\u570b\u7d9c\u5408\u6307\u6578"], ["^STI", "\u65b0\u52a0\u5761\u6d77\u5cfd\u6642\u5831\u6307\u6578"],
+  ["^BSESN", "\u5370\u5ea6\u5b5f\u8cb7\u6307\u6578"], ["^JKSE", "\u5370\u5c3c\u7d9c\u5408\u6307\u6578"], ["^KLSE", "\u99ac\u4f86\u897f\u4e9e\u6307\u6578"],
+  ["PSEI.PS", "\u83f2\u5f8b\u8cd3\u7d9c\u5408\u6307\u6578"], ["^GDAXI", "\u5fb7\u570bDAX\u6307\u6578"], ["^FTSE", "\u82f1\u570bFTSE 100\u6307\u6578"],
+  ["^FCHI", "\u6cd5\u570bCAC 40\u6307\u6578"], ["^STOXX50E", "\u6b50\u6d32\u85cd\u7c4c50\u6307\u6578"], ["RTSI.ME", "\u4fc4\u7f85\u65afRTS\u6307\u6578"],
+  ["^BVSP", "\u5df4\u897fBovespa\u6307\u6578"], ["^MXX", "\u58a8\u897f\u54e5IPC\u6307\u6578"], ["^GSPTSE", "\u52a0\u62ff\u5927S&P/TSX\u6307\u6578"],
+];
+
+const TW_RANKING_PAGES = {
+  gainers: ["change-up", 1],
+  losers: ["change-down", -1],
+  volume: ["volume", 0],
+};
+
+const US_SCREENER_IDS = {
+  gainers: "day_gainers",
+  losers: "day_losers",
+  volume: "most_actives",
+};
+
+const TW_TURNOVER_THRESHOLD_YI = 5;
+const TW_MARKET_CAP_THRESHOLD_TWD = 50_000_000_000;
+const US_LARGE_CAP_THRESHOLD = 10_000_000_000;
+const US_DOLLAR_VOLUME_FALLBACK = 100_000_000;
 
 const RANKING_UNIVERSE = {
   tw: [
@@ -215,11 +243,17 @@ async function rankingResponse() {
     rankingMarket("us"),
     rankingGlobal(),
   ]);
-  return { fetchedAt: new Date().toISOString(), markets: { tw, us }, global };
+  const { meta: twMeta, ...twRows } = tw;
+  const { meta: usMeta, ...usRows } = us;
+  const meta = { tw: twMeta || {}, us: usMeta || {} };
+  if (twMeta?.twFallbackReason) meta.twFallbackReason = twMeta.twFallbackReason;
+  return { fetchedAt: new Date().toISOString(), markets: { tw: twRows, us: usRows }, global, meta };
 }
 
 async function rankingMarket(market) {
   return cachedRanking(`market:${market}`, async () => {
+    if (market === "tw") return fetchTwRankings();
+    if (market === "us") return fetchUsRankings();
     const quotes = await fetchRankingQuotes(RANKING_UNIVERSE[market] || []);
     return {
       gainers: quotes.filter(x => Number.isFinite(x.changePercent)).sort((a, b) => b.changePercent - a.changePercent),
@@ -231,9 +265,172 @@ async function rankingMarket(market) {
 
 async function rankingGlobal() {
   return cachedRanking("global", async () => {
-    const quotes = await fetchRankingQuotes(GLOBAL_INDEX_UNIVERSE);
+    const quotes = await fetchRankingQuotes(GLOBAL_INDEX_RANKING_UNIVERSE);
     return quotes.filter(x => Number.isFinite(x.changePercent)).sort((a, b) => b.changePercent - a.changePercent);
   });
+}
+
+async function fetchTwRankings() {
+  try {
+    const [rawGainers, rawLosers, rawVolume, shares] = await Promise.all([
+      fetchTwRankingPage("gainers"),
+      fetchTwRankingPage("losers"),
+      fetchTwRankingPage("volume"),
+      twSharesOutstanding(),
+    ]);
+    const capGainers = withTwMarketCaps(rawGainers, shares);
+    const capLosers = withTwMarketCaps(rawLosers, shares);
+    const capVolume = withTwMarketCaps(rawVolume, shares);
+    const gainers = filterTwHotStocks(capGainers).sort((a, b) => b.changePercent - a.changePercent);
+    const losers = filterTwHotStocks(capLosers).sort((a, b) => a.changePercent - b.changePercent);
+    const volume = capVolume.filter(isTwCommonStock).sort((a, b) => b.volume - a.volume);
+    return { gainers, losers, volume, meta: { turnoverThresholdYi: TW_TURNOVER_THRESHOLD_YI, marketCapThresholdTwd: TW_MARKET_CAP_THRESHOLD_TWD, excludesEtf: true } };
+  } catch {
+    const [quotes, shares] = await Promise.all([
+      fetchRankingQuotes(RANKING_UNIVERSE.tw || []),
+      twSharesOutstanding().catch(() => new Map()),
+    ]);
+    const rows = withTwMarketCaps(quotes, shares).filter(isTwCommonStock);
+    return {
+      gainers: rows.filter(x => isLargeTwStock(x) && Number.isFinite(x.changePercent)).sort((a, b) => b.changePercent - a.changePercent),
+      losers: rows.filter(x => isLargeTwStock(x) && Number.isFinite(x.changePercent)).sort((a, b) => a.changePercent - b.changePercent),
+      volume: rows.filter(x => Number.isFinite(x.volume)).sort((a, b) => b.volume - a.volume),
+      meta: { twFallbackReason: "missing_turnover", marketCapThresholdTwd: TW_MARKET_CAP_THRESHOLD_TWD, excludesEtf: true },
+    };
+  }
+}
+
+function withTwMarketCaps(rows, shares) {
+  return rows.map(row => {
+    const shareCount = shares.get(row.symbol);
+    const marketCapTwd = Number.isFinite(row.price) && Number.isFinite(shareCount) ? row.price * shareCount : null;
+    return { ...row, marketCapTwd };
+  });
+}
+
+function filterTwHotStocks(rows) {
+  return rows
+    .filter(isTwCommonStock)
+    .filter(x => Number.isFinite(x.turnoverYi) && x.turnoverYi >= TW_TURNOVER_THRESHOLD_YI && isLargeTwStock(x) && Number.isFinite(x.changePercent));
+}
+
+function isLargeTwStock(item) {
+  return Number.isFinite(item.marketCapTwd) && item.marketCapTwd >= TW_MARKET_CAP_THRESHOLD_TWD;
+}
+
+function isTwCommonStock(item) {
+  return item && /^[1-9][0-9]{3}\.(TW|TWO)$/.test(String(item.symbol || ""));
+}
+
+async function fetchTwRankingPage(kind) {
+  const [slug, fixedSign] = TW_RANKING_PAGES[kind];
+  const url = `https://tw.stock.yahoo.com/rank/${slug}`;
+  const res = await fetch(url, { headers: { "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" } });
+  if (!res.ok) throw new Error(`Yahoo TW rank ${res.status}`);
+  const html = await res.text();
+  const rows = html.split('<li class="List(n)"').slice(1).map((row, index) => parseTwRankingRow(row, index, fixedSign)).filter(Boolean);
+  if (rows.length < 10) throw new Error("Yahoo TW rank parse failed");
+  return rows;
+}
+
+function parseTwRankingRow(row, index, fixedSign) {
+  const symbol = row.match(/quote\/([0-9A-Z]+\.(?:TW|TWO))/)?.[1];
+  if (!symbol) return null;
+  const name = htmlText(row.match(/<div class="Lh\(20px\)[^"]*">([^<]+)<\/div>/)?.[1] || symbol);
+  const stickyEnd = row.indexOf("</div></div></div>");
+  const dataPart = stickyEnd >= 0 ? row.slice(stickyEnd + 18) : row;
+  const cells = [...dataPart.matchAll(/<div class="Fxg\(1\)[\s\S]*?<\/div>/g)].map(x => htmlText(stripTags(x[0]))).filter(Boolean);
+  const price = parseMarketNumber(cells[0]);
+  const rawChange = parseMarketNumber(cells[1]);
+  const rawChangePercent = parseMarketNumber(cells[2]);
+  const volume = parseMarketNumber(cells[6]);
+  const turnoverYi = parseMarketNumber(cells[7]);
+  const sign = fixedSign || (row.includes("$c-trend-down") ? -1 : 1);
+  return {
+    rank: index + 1,
+    name,
+    symbol,
+    type: "\u53f0\u80a1",
+    price,
+    change: Number.isFinite(rawChange) ? rawChange * sign : null,
+    changePercent: Number.isFinite(rawChangePercent) ? rawChangePercent * sign : null,
+    volume,
+    turnoverYi,
+    market: symbol.endsWith(".TWO") ? "TWO" : "TAI",
+    ok: true,
+  };
+}
+
+async function fetchUsRankings() {
+  try {
+    const [rawGainers, rawLosers, volume] = await Promise.all([
+      fetchUsScreener("gainers"),
+      fetchUsScreener("losers"),
+      fetchUsScreener("volume"),
+    ]);
+    const gainers = filterUsLargeFlow(rawGainers).sort((a, b) => b.changePercent - a.changePercent);
+    const losers = filterUsLargeFlow(rawLosers).sort((a, b) => a.changePercent - b.changePercent);
+    return { gainers, losers, volume, meta: { largeCapThreshold: US_LARGE_CAP_THRESHOLD, dollarVolumeFallback: US_DOLLAR_VOLUME_FALLBACK } };
+  } catch {
+    const quotes = await fetchRankingQuotes(RANKING_UNIVERSE.us || []);
+    return {
+      gainers: quotes.filter(x => Number.isFinite(x.changePercent)).sort((a, b) => b.changePercent - a.changePercent),
+      losers: quotes.filter(x => Number.isFinite(x.changePercent)).sort((a, b) => a.changePercent - b.changePercent),
+      volume: quotes.filter(x => Number.isFinite(x.volume)).sort((a, b) => b.volume - a.volume),
+    };
+  }
+}
+
+async function fetchUsScreener(kind) {
+  const id = US_SCREENER_IDS[kind];
+  const url = `https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved?formatted=false&scrIds=${encodeURIComponent(id)}&count=100`;
+  const res = await fetch(url, { headers: { "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" } });
+  if (!res.ok) throw new Error(`Yahoo US rank ${res.status}`);
+  const data = await res.json();
+  const quotes = data.finance?.result?.[0]?.quotes || [];
+  const rows = quotes.map((quote, index) => ({
+    rank: index + 1,
+    name: quote.shortName || quote.longName || quote.symbol,
+    symbol: quote.symbol,
+    type: "\u7f8e\u80a1",
+    price: numberOrNull(quote.regularMarketPrice),
+    change: numberOrNull(quote.regularMarketChange),
+    changePercent: numberOrNull(quote.regularMarketChangePercent),
+    volume: numberOrNull(quote.regularMarketVolume),
+    marketCap: numberOrNull(quote.marketCap),
+    dollarVolume: Number.isFinite(Number(quote.regularMarketPrice)) && Number.isFinite(Number(quote.regularMarketVolume)) ? Number(quote.regularMarketPrice) * Number(quote.regularMarketVolume) : null,
+    market: quote.fullExchangeName || quote.exchange || "",
+    currency: quote.currency || "",
+    ok: true,
+  })).filter(x => x.symbol && Number.isFinite(x.changePercent));
+  if (rows.length < 10) throw new Error("Yahoo US rank parse failed");
+  return rows;
+}
+
+function filterUsLargeFlow(rows) {
+  return rows.filter(x => {
+    if (Number.isFinite(x.marketCap)) return x.marketCap >= US_LARGE_CAP_THRESHOLD;
+    return Number.isFinite(x.dollarVolume) && x.dollarVolume >= US_DOLLAR_VOLUME_FALLBACK;
+  });
+}
+
+function stripTags(value) {
+  return String(value || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function htmlText(value) {
+  return String(value || "")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .trim();
+}
+
+function parseMarketNumber(value) {
+  const n = Number(String(value || "").replace(/,/g, "").replace(/%/g, "").trim());
+  return Number.isFinite(n) ? n : null;
 }
 
 async function cachedRanking(key, loader) {
