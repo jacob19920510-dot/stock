@@ -10,6 +10,11 @@
           "type": "台股"
         },
         {
+          "symbol": "2330.TW",
+          "name": "台積電",
+          "type": "台股"
+        },
+        {
           "symbol": "QQQ",
           "name": "Invesco QQQ Trust, Series 1",
           "type": "美股"
@@ -18,11 +23,6 @@
           "symbol": "VOO",
           "name": "Vanguard S&P 500 ETF",
           "type": "美股"
-        },
-        {
-          "symbol": "2330.TW",
-          "name": "台積電",
-          "type": "台股"
         },
         {
           "symbol": "2454.TW",
@@ -48,6 +48,11 @@
           "symbol": "0056.TW",
           "name": "元大高股息",
           "type": "台股"
+        },
+        {
+          "symbol": "RXST",
+          "name": "RxSight, Inc.",
+          "type": "美股"
         }
       ]
     },
