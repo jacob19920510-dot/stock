@@ -73,6 +73,11 @@
           "symbol": "^SOX",
           "name": "費城半導體指數",
           "type": "指數"
+        },
+        {
+          "symbol": "^VIX",
+          "name": "VIX恐慌指數",
+          "type": "指數"
         }
       ]
     },

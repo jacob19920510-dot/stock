@@ -139,7 +139,7 @@ function numberOrNull(value) {
 
 async function fetchQuote(item) {
   const symbol = cleanSymbol(item.symbol);
-  const { meta } = await fetchChart(symbol, "1d", "1m");
+  const { meta, candles } = await fetchChart(symbol, "1d", "1m");
   const price = Number(meta.regularMarketPrice);
   const previousClose = Number(meta.previousClose || meta.chartPreviousClose);
   const change = Number.isFinite(price) && Number.isFinite(previousClose) ? price - previousClose : null;
@@ -160,6 +160,7 @@ async function fetchQuote(item) {
     currency: meta.currency || "",
     market: meta.exchangeName || meta.exchange || "",
     updatedAt,
+    sparkline: candles.slice(-48).map(x => ({ time: x.time, close: x.close })).filter(x => Number.isFinite(x.close)),
     ok: true,
   };
 }
