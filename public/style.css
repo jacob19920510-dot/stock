@@ -21,6 +21,20 @@ h2 { margin:0 0 10px; font-size:18px; }
 .search { position:relative; display:flex; gap:8px; align-items:center; }
 .search select,.search input { height:38px; border:1px solid var(--line); border-radius:7px; background:var(--field); color:var(--text); padding:0 10px; transition:background-color .24s ease,color .24s ease,border-color .24s ease; }
 .search input { width:320px; }
+.theme-toggle { position:relative; width:38px; height:38px; padding:0; display:grid; place-items:center; border:1px solid var(--line); border-radius:7px; background:var(--field); color:var(--muted); overflow:hidden; transition:background-color .24s ease,color .24s ease,border-color .24s ease; }
+.theme-toggle:hover { color:var(--blue); border-color:color-mix(in srgb,var(--blue) 45%,var(--line)); }
+.theme-toggle svg { position:absolute; width:18px; height:18px; transition:transform .5s cubic-bezier(.4,0,.2,1),opacity .25s ease; }
+.theme-toggle .icon-sun { opacity:1; transform:rotate(0) scale(1); }
+.theme-toggle .icon-moon { opacity:0; transform:rotate(-90deg) scale(.4); }
+body.light .theme-toggle .icon-sun { opacity:0; transform:rotate(90deg) scale(.4); }
+body.light .theme-toggle .icon-moon { opacity:1; transform:rotate(0) scale(1); }
+.refresh-btn { height:38px; padding:0 12px 0 10px; display:inline-flex; align-items:center; gap:6px; border:1px solid var(--line); border-radius:7px; background:var(--field); color:var(--muted); font-size:14px; transition:background-color .24s ease,color .24s ease,border-color .24s ease; }
+.refresh-btn:hover { color:var(--green); border-color:color-mix(in srgb,var(--green) 45%,var(--line)); }
+.refresh-btn:active { transform:scale(.96); }
+.refresh-btn svg { width:16px; height:16px; transition:transform .4s ease; }
+.refresh-btn:hover svg { transform:rotate(120deg); }
+.refresh-btn.spinning svg { animation:spin .8s cubic-bezier(.4,0,.2,1); }
+@keyframes spin { from { transform:rotate(0); } to { transform:rotate(360deg); } }
 .suggest { position:absolute; top:44px; left:0; right:0; z-index:5; display:grid; gap:6px; max-height:360px; overflow:auto; }
 .pick { display:flex; align-items:center; justify-content:space-between; gap:10px; border:1px solid var(--line); border-radius:7px; background:var(--panel); padding:9px 10px; box-shadow:0 10px 30px rgba(0,0,0,.18); }
 .pick strong,.mono { font-family:ui-monospace,SFMono-Regular,Consolas,monospace; }

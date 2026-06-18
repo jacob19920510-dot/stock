@@ -38,6 +38,11 @@
           "symbol": "NVDA",
           "name": "NVIDIA Corporation",
           "type": "美股"
+        },
+        {
+          "symbol": "7723.TWO",
+          "name": "築間",
+          "type": "台股"
         }
       ]
     },
