@@ -60,34 +60,34 @@
       "name": "指數",
       "symbols": [
         {
-          "symbol": "^TWII",
-          "name": "台灣加權指數",
-          "type": "指數"
+          "symbol": "^HSI",
+          "name": "香港恆生指數",
+          "type": "指數",
+          "region": "香港"
         },
         {
           "symbol": "^GSPC",
           "name": "標普500指數",
-          "type": "指數"
+          "type": "指數",
+          "region": "美國"
         },
         {
           "symbol": "^NDX",
           "name": "納斯達克100指數",
-          "type": "指數"
+          "type": "指數",
+          "region": "美國"
         },
         {
-          "symbol": "^DJI",
-          "name": "道瓊指數",
-          "type": "指數"
+          "symbol": "^TWII",
+          "name": "台灣加權指數",
+          "type": "指數",
+          "region": "台灣"
         },
         {
-          "symbol": "^SOX",
-          "name": "費城半導體指數",
-          "type": "指數"
-        },
-        {
-          "symbol": "^VIX",
-          "name": "VIX恐慌指數",
-          "type": "指數"
+          "symbol": "000001.SS",
+          "name": "上海綜合指數",
+          "type": "指數",
+          "region": "中國"
         }
       ]
     },

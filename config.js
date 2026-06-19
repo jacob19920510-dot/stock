@@ -1,5 +1,6 @@
 const fs = require("node:fs/promises");
 const path = require("node:path");
+const { cloneGlobalMarketOptions, normalizeGlobalMarketSlots } = require("./globalMarket");
 
 const CONFIG_PATH = path.join(__dirname, "config.json");
 
@@ -44,6 +45,16 @@ function canWatch(type, symbol) {
   if (symbol.startsWith("^") || symbol.endsWith("=F") || symbol.includes("&")) return false;
   const kind = String(type || marketType(symbol)).trim();
   return kind !== "\u6307\u6578" && kind !== "\u671f\u8ca8";
+}
+
+function indexGroup(config) {
+  let group = config.groups.find(g => g.name === "\u6307\u6578");
+  if (!group) {
+    group = { name: "\u6307\u6578", symbols: [] };
+    config.groups.push(group);
+  }
+  if (!Array.isArray(group.symbols)) group.symbols = [];
+  return group;
 }
 
 async function readBody(req) {
@@ -93,11 +104,37 @@ async function reorderWatchSymbols(req) {
   return { ok: true };
 }
 
+async function readGlobalMarket() {
+  const config = await readConfig();
+  const group = indexGroup(config);
+  return {
+    slots: normalizeGlobalMarketSlots(group.symbols),
+    options: cloneGlobalMarketOptions(),
+  };
+}
+
+async function updateGlobalMarket(req) {
+  const body = await readBody(req);
+  const slots = normalizeGlobalMarketSlots(body.slots || body.symbols, { strict: true });
+  const config = await readConfig();
+  const group = indexGroup(config);
+  group.symbols = slots;
+  await writeConfig(config);
+  return {
+    ok: true,
+    slots,
+    options: cloneGlobalMarketOptions(),
+  };
+}
+
 module.exports = {
   readConfig,
   writeConfig,
   watchlist,
+  indexGroup,
   addWatchSymbol,
   removeWatchSymbol,
   reorderWatchSymbols,
+  readGlobalMarket,
+  updateGlobalMarket,
 };

@@ -1,5 +1,6 @@
 const { readConfig } = require("../config");
 const { hasChinese, twName, twUniverse, twseCodeQuery, twSharesOutstanding } = require("./twse");
+const { GLOBAL_MARKET_OPTIONS } = require("../globalMarket");
 
 function cleanSymbol(value) {
   return String(value || "").trim().toUpperCase().slice(0, 24);
@@ -120,6 +121,8 @@ const GLOBAL_INDEX_UNIVERSE = [
   ["^FCHI", "法國CAC40指數"],
 ];
 
+const WIND_BTC_QUOTE = { symbol: "BTC-USD", name: "BTC ???", type: "????" };
+
 // 台指期歷史 K 線：Yahoo 台灣技術分析頁使用的 ApacLibraCharts API，
 // period=d/w/m 對應日/週/月 K，回傳結構與 fetchChart 一致。
 async function fetchTwFutureHistory(symbol, period = "d") {
@@ -218,7 +221,7 @@ async function fetchQuote(item) {
 async function quotesResponse() {
   const config = await readConfig();
   const groups = await Promise.all(config.groups.map(async group => {
-    const symbols = Array.isArray(group.symbols) ? group.symbols : [];
+    const symbols = Array.isArray(group.symbols) ? group.symbols.filter(Boolean) : [];
     const quotes = await Promise.all(symbols.map(async item => {
       try {
         return await fetchQuote(item);
@@ -232,9 +235,45 @@ async function quotesResponse() {
         };
       }
     }));
-    return { name: group.name || "未命名", editable: group.name === "自選股", quotes };
+    return { name: group.name || "\u672a\u547d\u540d", editable: group.name === "\u81ea\u9078\u80a1", quotes };
   }));
+
+  const btcQuote = await (async () => {
+    try {
+      return await fetchQuote(WIND_BTC_QUOTE);
+    } catch (error) {
+      return {
+        name: WIND_BTC_QUOTE.name,
+        symbol: WIND_BTC_QUOTE.symbol,
+        type: WIND_BTC_QUOTE.type,
+        ok: false,
+        error: error.message,
+      };
+    }
+  })();
+
+  const futuresGroup = groups.find(group => group.name === "\u671f\u8ca8");
+  if (futuresGroup) futuresGroup.quotes = [...futuresGroup.quotes, btcQuote];
+  else groups.push({ name: "\u671f\u8ca8", editable: false, quotes: [btcQuote] });
+
   return { refreshSeconds: config.refreshSeconds, fetchedAt: new Date().toISOString(), groups };
+}
+
+async function globalMarketOptionsResponse() {
+  const options = await Promise.all(GLOBAL_MARKET_OPTIONS.map(async option => {
+    try {
+      return await fetchQuote(option);
+    } catch (error) {
+      return {
+        name: option.name,
+        symbol: option.symbol,
+        type: option.type,
+        ok: false,
+        error: error.message,
+      };
+    }
+  }));
+  return { fetchedAt: new Date().toISOString(), options };
 }
 
 async function rankingResponse() {
@@ -587,6 +626,7 @@ module.exports = {
   fetchQuote,
   quotesResponse,
   rankingResponse,
+  globalMarketOptionsResponse,
   yahooSearch,
   detailResponse,
 };
