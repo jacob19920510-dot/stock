@@ -30,6 +30,10 @@ button { cursor:pointer; }
   overflow:visible;
   backdrop-filter:none;
 }
+body.global-market-edit .topbar,
+body.market-picker-open .topbar {
+  z-index:12;
+}
 body.light .topbar {
   background:linear-gradient(180deg,rgba(255,255,255,.98),rgba(248,251,255,.96));
   border-color:rgba(215,224,235,.72);
