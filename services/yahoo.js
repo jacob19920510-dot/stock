@@ -210,7 +210,7 @@ async function fetchQuote(item) {
     currency: meta.currency || "",
     market: meta.exchangeName || meta.exchange || "",
     updatedAt,
-    sparkline: candles.slice(-48).map(x => ({ time: x.time, close: x.close })).filter(x => Number.isFinite(x.close)),
+    sparkline: candles.map(x => ({ time: x.time, close: x.close })).filter(x => Number.isFinite(x.close)),
     ok: true,
   };
 }
@@ -527,7 +527,7 @@ async function detailResponse(symbol, name = "", type = "") {
   const clean = cleanSymbol(symbol);
   const twFut = isTwFuture(clean);
   const [{ meta, candles: intraday }, daily] = await Promise.all([
-    fetchChart(clean, "1d", "5m"),
+    fetchChart(clean, "1d", "1m"),
     twFut ? fetchTwFutureHistory(clean, "d") : fetchChart(clean, "1y", "1d"),
   ]);
   const quote = await fetchQuote({ symbol: clean, name, type });
