@@ -512,13 +512,20 @@ async function yahooSearch(market, query) {
 async function twSearch(query) {
   let suggestions = await twseCodeQuery(query);
   const q = String(query || "").trim().toUpperCase();
+  const useUniverseFallback = /^[0-9A-Z]{1,6}$/.test(q);
+  const universeMatches = useUniverseFallback
+    ? (await twUniverse())
+      .filter(x => String(x.code).toUpperCase().includes(q) || String(x.name).includes(query))
+      .sort((a, b) => twSearchRank(a.code, q, a.name, query) - twSearchRank(b.code, q, b.name, query))
+      .slice(0, 40)
+    : [];
   const nameMatches = hasChinese(query)
     ? (await twUniverse())
       .filter(x => String(x.code).toUpperCase().includes(q) || String(x.name).includes(query))
       .sort((a, b) => twSearchRank(a.code, q, a.name, query) - twSearchRank(b.code, q, b.name, query))
       .slice(0, 24)
     : [];
-  suggestions = [...suggestions.map(x => ({ ...x })), ...nameMatches]
+  suggestions = [...suggestions.map(x => ({ ...x })), ...universeMatches, ...nameMatches]
     .filter(x => x.name && x.name !== x.code);
   if (/^[0-9A-Z]{4,6}$/.test(q) && !suggestions.some(x => x.code === q)) {
     suggestions.unshift({ code: q, name: "" });
