@@ -11,10 +11,10 @@
           "region": "中國"
         },
         {
-          "symbol": "^HSI",
-          "name": "香港恆生指數",
+          "symbol": "^TWII",
+          "name": "台灣加權指數",
           "type": "指數",
-          "region": "香港"
+          "region": "台灣"
         },
         {
           "symbol": "^NDX",
@@ -46,7 +46,7 @@
         },
         {
           "symbol": "NQ=F",
-          "name": "小納斯達克期貨",
+          "name": "那斯達克期貨",
           "type": "期貨"
         },
         {
@@ -198,6 +198,11 @@
         {
           "symbol": "TSM",
           "name": "Taiwan Semiconductor Manufactur",
+          "type": "美股"
+        },
+        {
+          "symbol": "GOOG",
+          "name": "Alphabet Inc.",
           "type": "美股"
         }
       ]
