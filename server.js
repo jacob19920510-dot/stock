@@ -2,7 +2,7 @@ const http = require("node:http");
 const fs = require("node:fs/promises");
 const path = require("node:path");
 
-const { readConfig, addWatchSymbol, removeWatchSymbol, reorderWatchSymbols, readGlobalMarket, updateGlobalMarket } = require("./config");
+const { readConfig, readWatchlists, createWatchlist, updateWatchlist, deleteWatchlist, addWatchSymbol, removeWatchSymbol, reorderWatchSymbols, reorderWatchlists, readGlobalMarket, updateGlobalMarket } = require("./config");
 const { quotesResponse, rankingResponse, yahooSearch, detailResponse, globalMarketOptionsResponse } = require("./services/yahoo");
 const { twUniverse } = require("./services/twse");
 
@@ -75,6 +75,19 @@ const server = http.createServer(async (req, res) => {
     if (req.method === "GET" && url.pathname === "/api/rankings") return json(res, 200, await rankingResponse());
     if (req.method === "GET" && url.pathname === "/api/search") return json(res, 200, await yahooSearch(url.searchParams.get("market"), url.searchParams.get("q")));
     if (req.method === "GET" && url.pathname === "/api/detail") return json(res, 200, await detailResponse(url.searchParams.get("symbol"), url.searchParams.get("name"), url.searchParams.get("type")));
+    if (req.method === "GET" && url.pathname === "/api/watchlists") return json(res, 200, await readWatchlists());
+    if (req.method === "POST" && url.pathname === "/api/watchlists") return json(res, 200, await createWatchlist(req));
+    if (req.method === "POST" && url.pathname === "/api/watchlists/reorder") return json(res, 200, await reorderWatchlists(req));
+    const watchlistMatch = url.pathname.match(/^\/api\/watchlists\/([^/]+)(?:\/(add|remove|reorder))?$/);
+    if (watchlistMatch) {
+      const id = decodeURIComponent(watchlistMatch[1]);
+      const action = watchlistMatch[2] || "";
+      if (req.method === "PATCH" && !action) return json(res, 200, await updateWatchlist(req, id));
+      if (req.method === "DELETE" && !action) return json(res, 200, await deleteWatchlist(id));
+      if (req.method === "POST" && action === "add") return json(res, 200, await addWatchSymbol(req, id));
+      if (req.method === "POST" && action === "remove") return json(res, 200, await removeWatchSymbol(req, id));
+      if (req.method === "POST" && action === "reorder") return json(res, 200, await reorderWatchSymbols(req, id));
+    }
     if (req.method === "POST" && url.pathname === "/api/global-market") return json(res, 200, await updateGlobalMarket(req));
     if (req.method === "POST" && url.pathname === "/api/watchlist/add") return json(res, 200, await addWatchSymbol(req));
     if (req.method === "POST" && url.pathname === "/api/watchlist/remove") return json(res, 200, await removeWatchSymbol(req));

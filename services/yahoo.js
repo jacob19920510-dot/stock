@@ -220,22 +220,27 @@ async function fetchQuote(item) {
 
 async function quotesResponse() {
   const config = await readConfig();
+  const quoteItems = async items => Promise.all(items.map(async item => {
+    try {
+      return await fetchQuote(item);
+    } catch (error) {
+      return {
+        name: item.name || item.symbol || "",
+        symbol: item.symbol || "",
+        type: item.type || marketType(cleanSymbol(item.symbol || "")),
+        ok: false,
+        error: error.message,
+      };
+    }
+  }));
   const groups = await Promise.all(config.groups.map(async group => {
     const symbols = Array.isArray(group.symbols) ? group.symbols.filter(Boolean) : [];
-    const quotes = await Promise.all(symbols.map(async item => {
-      try {
-        return await fetchQuote(item);
-      } catch (error) {
-        return {
-          name: item.name || item.symbol || "",
-          symbol: item.symbol || "",
-          type: item.type || marketType(cleanSymbol(item.symbol || "")),
-          ok: false,
-          error: error.message,
-        };
-      }
-    }));
-    return { name: group.name || "\u672a\u547d\u540d", editable: group.name === "\u81ea\u9078\u80a1", quotes };
+    const quotes = await quoteItems(symbols);
+    return { name: group.name || "\u672a\u547d\u540d", editable: false, quotes };
+  }));
+  const watchlists = await Promise.all((config.watchlists || []).map(async list => {
+    const quotes = await quoteItems(Array.isArray(list.symbols) ? list.symbols.filter(Boolean) : []);
+    return { id: list.id, name: list.name, locked: Boolean(list.locked), quotes };
   }));
 
   const btcQuote = await (async () => {
@@ -256,7 +261,7 @@ async function quotesResponse() {
   if (futuresGroup) futuresGroup.quotes = [...futuresGroup.quotes, btcQuote];
   else groups.push({ name: "\u671f\u8ca8", editable: false, quotes: [btcQuote] });
 
-  return { refreshSeconds: config.refreshSeconds, fetchedAt: new Date().toISOString(), groups };
+  return { refreshSeconds: config.refreshSeconds, fetchedAt: new Date().toISOString(), groups, watchlists };
 }
 
 async function globalMarketOptionsResponse() {
