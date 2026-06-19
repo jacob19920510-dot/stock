@@ -5,10 +5,16 @@
       "name": "指數",
       "symbols": [
         {
-          "symbol": "^TWII",
-          "name": "台灣加權指數",
+          "symbol": "000001.SS",
+          "name": "上海綜合指數",
           "type": "指數",
-          "region": "台灣"
+          "region": "中國"
+        },
+        {
+          "symbol": "^HSI",
+          "name": "香港恆生指數",
+          "type": "指數",
+          "region": "香港"
         },
         {
           "symbol": "^NDX",
@@ -27,12 +33,6 @@
           "name": "費城半導體指數",
           "type": "指數",
           "region": "美國"
-        },
-        {
-          "symbol": "000001.SS",
-          "name": "上海綜合指數",
-          "type": "指數",
-          "region": "中國"
         }
       ]
     },
@@ -74,16 +74,6 @@
       "locked": true,
       "symbols": [
         {
-          "symbol": "0050.TW",
-          "name": "元大台灣50",
-          "type": "台股"
-        },
-        {
-          "symbol": "0052.TW",
-          "name": "富邦科技",
-          "type": "台股"
-        },
-        {
           "symbol": "VOO",
           "name": "Vanguard S&P 500 ETF",
           "type": "美股"
@@ -92,26 +82,6 @@
           "symbol": "QQQ",
           "name": "Invesco QQQ Trust, Series 1",
           "type": "美股"
-        },
-        {
-          "symbol": "00631L.TW",
-          "name": "元大台灣50正2",
-          "type": "台股"
-        },
-        {
-          "symbol": "00403A.TW",
-          "name": "主動統一升級50",
-          "type": "台股"
-        },
-        {
-          "symbol": "00981A.TW",
-          "name": "主動統一台股增長",
-          "type": "台股"
-        },
-        {
-          "symbol": "2330.TW",
-          "name": "台積電",
-          "type": "台股"
         },
         {
           "symbol": "TSM",
@@ -134,8 +104,8 @@
           "type": "美股"
         },
         {
-          "symbol": "AAPL",
-          "name": "Apple Inc.",
+          "symbol": "SPCX",
+          "name": "Space Exploration Technologies",
           "type": "美股"
         },
         {
@@ -144,30 +114,58 @@
           "type": "美股"
         },
         {
-          "symbol": "SPCX",
-          "name": "Space Exploration Technologies",
+          "symbol": "AAPL",
+          "name": "Apple Inc.",
           "type": "美股"
-        }
-      ]
-    },
-    {
-      "id": "watchlist",
-      "name": "記憶卡蛙",
-      "locked": true,
-      "symbols": [
+        },
         {
-          "symbol": "2408.TW",
-          "name": "南亞科",
+          "symbol": "TQQQ",
+          "name": "ProShares UltraPro QQQ",
+          "type": "美股"
+        },
+        {
+          "symbol": "SPY",
+          "name": "State Street SPDR S&P 500 ETF T",
+          "type": "美股"
+        },
+        {
+          "symbol": "GOOG",
+          "name": "Alphabet Inc.",
+          "type": "美股"
+        },
+        {
+          "symbol": "0052.TW",
+          "name": "富邦科技",
           "type": "台股"
         },
         {
-          "symbol": "6770.TW",
-          "name": "力積電",
+          "symbol": "00631L.TW",
+          "name": "元大台灣50正2",
           "type": "台股"
         },
         {
-          "symbol": "3481.TW",
-          "name": "群創",
+          "symbol": "00981A.TW",
+          "name": "主動統一台股增長",
+          "type": "台股"
+        },
+        {
+          "symbol": "00403A.TW",
+          "name": "主動統一升級50",
+          "type": "台股"
+        },
+        {
+          "symbol": "2330.TW",
+          "name": "台積電",
+          "type": "台股"
+        },
+        {
+          "symbol": "0056.TW",
+          "name": "元大高股息",
+          "type": "台股"
+        },
+        {
+          "symbol": "0050.TW",
+          "name": "元大台灣50",
           "type": "台股"
         }
       ]

@@ -6,8 +6,8 @@ const fmtTime=v=>v?new Date(v).toLocaleString('zh-TW',{hour12:false}):'-';
 const cls=v=>v>0?'up':v<0?'down':'';
 const esc=v=>String(v??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 const canWatch=q=>q?.type!=='指數'&&q?.type!=='期貨';
-const windOrder=['ES=F','NQ=F','WTX&','BTC-USD','GC=F','BZ=F'];
-const windLabels={'ES=F':'\u5c0fS&P500\u671f\u8ca8','NQ=F':'\u5c0f\u90a3\u65af\u9054\u514b\u671f\u8ca8','WTX&':'\u53f0\u6307\u671f\u8fd1\u4e00','BTC-USD':'BTC \u6bd4\u7279\u5e63','GC=F':'\u9ec3\u91d1\u671f\u8ca8','BZ=F':'Brent \u539f\u6cb9\u671f\u8ca8'};
+const windOrder=['ES=F','NQ=F','WTX&','BTC-USD','GC=F','CL=F'];
+const windLabels={'ES=F':'\u5c0fS&P500\u671f\u8ca8','NQ=F':'\u5c0f\u90a3\u65af\u9054\u514b\u671f\u8ca8','WTX&':'\u53f0\u6307\u671f\u8fd1\u4e00','BTC-USD':'BTC \u6bd4\u7279\u5e63','GC=F':'\u9ec3\u91d1\u671f\u8ca8','CL=F':'\u539f\u6cb9\u671f\u8ca8'};
 const globalMarketOptionLabel=o=>o?.region?o.region+' · '+o.name:o?.name||'-';
 const sectionTitleIcon=kind=>kind==='watch'?'<span class="section-title-icon section-title-icon-watch" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.9l2.8 5.68 6.27.91-4.53 4.42 1.07 6.24L12 17.2 6.38 20.15l1.07-6.24L2.92 9.49l6.27-.91L12 2.9z"/></svg></span>':'';
 function cloneSlots(slots){ return Array.isArray(slots)?slots.slice(0,5).map(s=>s?{...s}:null):[]; }
