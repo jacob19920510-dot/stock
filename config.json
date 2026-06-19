@@ -60,20 +60,20 @@
       "name": "指數",
       "symbols": [
         {
-          "symbol": "^HSI",
-          "name": "香港恆生指數",
+          "symbol": "000001.SS",
+          "name": "上海綜合指數",
           "type": "指數",
-          "region": "香港"
-        },
-        {
-          "symbol": "^GSPC",
-          "name": "標普500指數",
-          "type": "指數",
-          "region": "美國"
+          "region": "中國"
         },
         {
           "symbol": "^NDX",
           "name": "納斯達克100指數",
+          "type": "指數",
+          "region": "美國"
+        },
+        {
+          "symbol": "^GSPC",
+          "name": "標普500指數",
           "type": "指數",
           "region": "美國"
         },
@@ -84,10 +84,10 @@
           "region": "台灣"
         },
         {
-          "symbol": "000001.SS",
-          "name": "上海綜合指數",
+          "symbol": "^HSI",
+          "name": "香港恆生指數",
           "type": "指數",
-          "region": "中國"
+          "region": "香港"
         }
       ]
     },

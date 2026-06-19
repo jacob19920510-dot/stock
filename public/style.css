@@ -163,6 +163,11 @@ body.market-picker-open .market-layer { display:grid; place-items:center; animat
 .market-option-list { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
 .market-option { width:100%; display:flex; align-items:center; justify-content:space-between; gap:14px; border:1px solid var(--card-border); border-radius:10px; background:linear-gradient(180deg,color-mix(in srgb,var(--panel2) 68%,transparent),color-mix(in srgb,var(--panel) 90%,transparent)); color:var(--text); padding:10px 12px; text-align:left; transition:transform .15s ease,border-color .2s ease,box-shadow .2s ease; }
 .market-option:hover { transform:translateY(-2px); border-color:color-mix(in srgb,var(--blue) 40%,var(--card-border)); box-shadow:var(--hover-glow); }
+.market-option[data-used="true"] { border-color:color-mix(in srgb,var(--blue) 56%,var(--card-border)); background:linear-gradient(180deg,color-mix(in srgb,var(--blue) 11%,var(--panel2)),color-mix(in srgb,var(--blue) 7%,var(--panel))); box-shadow:0 0 0 1px color-mix(in srgb,var(--blue) 28%,transparent),0 8px 22px rgba(37,99,235,.11); }
+.market-option[data-used="true"] strong { color:var(--blue); }
+.market-option[data-used="true"] .market-option-meta { color:color-mix(in srgb,var(--blue) 48%,var(--muted)); }
+.market-option[data-used="true"] .market-option-price { color:var(--blue); }
+.market-option[data-selected="true"] { border-color:color-mix(in srgb,var(--blue) 70%,var(--card-border)); background:linear-gradient(180deg,color-mix(in srgb,var(--blue) 18%,var(--panel2)),color-mix(in srgb,var(--blue) 11%,var(--panel))); box-shadow:0 0 0 1px color-mix(in srgb,var(--blue) 45%,transparent),0 12px 30px rgba(37,99,235,.16); }
 .market-option strong { display:block; font-size:14px; }
 .market-option .market-option-meta { color:var(--muted); font-size:12px; margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .market-option .market-option-price { font-size:14px; font-weight:800; white-space:nowrap; text-align:right; }

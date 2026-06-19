@@ -121,7 +121,7 @@ const GLOBAL_INDEX_UNIVERSE = [
   ["^FCHI", "法國CAC40指數"],
 ];
 
-const WIND_BTC_QUOTE = { symbol: "BTC-USD", name: "BTC ???", type: "????" };
+const WIND_BTC_QUOTE = { symbol: "BTC-USD", name: "BTC 比特幣", type: "加密貨幣" };
 
 // 台指期歷史 K 線：Yahoo 台灣技術分析頁使用的 ApacLibraCharts API，
 // period=d/w/m 對應日/週/月 K，回傳結構與 fetchChart 一致。
