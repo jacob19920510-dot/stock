@@ -123,6 +123,8 @@ body.light .theme-toggle .icon-moon { opacity:1; transform:rotate(0) scale(1); }
 .watch-count { height:28px; display:inline-flex; align-items:center; padding:0 10px; border:1px solid var(--card-border); border-radius:999px; background:color-mix(in srgb,var(--blue) 12%,var(--panel2)); color:var(--muted); font-size:13px; font-weight:800; }
 .watch-view-toggle { display:flex; align-items:center; gap:6px; }
 .watch-view-toggle .small-btn.active { border-color:color-mix(in srgb,var(--blue) 55%,transparent); background:linear-gradient(180deg,color-mix(in srgb,var(--blue) 82%,#000),color-mix(in srgb,var(--blue) 66%,#000)); color:#fff; box-shadow:0 4px 14px color-mix(in srgb,var(--blue) 24%,transparent); }
+.watch-body { min-width:0; transform-origin:top center; }
+.watch-view-animating .watch-body { pointer-events:none; }
 table { width:100%; border-collapse:separate; border-spacing:0; }
 th,td { padding:10px 10px; border-bottom:1px solid var(--card-border); text-align:right; white-space:nowrap; transition:border-color .24s ease,color .24s ease,background-color .18s ease; }
 th:first-child,td:first-child,th:nth-child(2),td:nth-child(2) { text-align:left; }
