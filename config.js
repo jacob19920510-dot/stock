@@ -1,6 +1,7 @@
 const fs = require("node:fs/promises");
 const path = require("node:path");
 const { cloneGlobalMarketOptions, normalizeGlobalMarketSlots } = require("./globalMarket");
+const { cloneMarketWindGroups, defaultMarketWindSlots, normalizeMarketWindSlots } = require("./windMarket");
 
 const CONFIG_PATH = path.join(__dirname, "config.json");
 
@@ -11,6 +12,7 @@ async function readConfig() {
     refreshSeconds: Number(config.refreshSeconds) || 30,
     groups: normalizeGroups(config.groups),
     watchlists: normalizeWatchlists(config),
+    marketWind: normalizeMarketWind(config.marketWind),
   };
 }
 
@@ -124,6 +126,10 @@ function indexGroup(config) {
   }
   if (!Array.isArray(group.symbols)) group.symbols = [];
   return group;
+}
+
+function normalizeMarketWind(marketWind) {
+  return { slots: normalizeMarketWindSlots(marketWind?.slots || defaultMarketWindSlots()) };
 }
 
 async function readBody(req) {
@@ -255,6 +261,20 @@ async function updateGlobalMarket(req) {
   };
 }
 
+async function readMarketWind() {
+  const config = await readConfig();
+  return { slots: normalizeMarketWindSlots(config.marketWind?.slots), groups: cloneMarketWindGroups() };
+}
+
+async function updateMarketWind(req) {
+  const body = await readBody(req);
+  const slots = normalizeMarketWindSlots(body.slots, { strict: true });
+  const config = await readConfig();
+  config.marketWind = { slots };
+  await writeConfig(config);
+  return { ok: true, slots, groups: cloneMarketWindGroups() };
+}
+
 module.exports = {
   readConfig,
   writeConfig,
@@ -271,4 +291,6 @@ module.exports = {
   reorderWatchlists,
   readGlobalMarket,
   updateGlobalMarket,
+  readMarketWind,
+  updateMarketWind,
 };

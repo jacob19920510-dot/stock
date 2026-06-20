@@ -1,6 +1,7 @@
 const { readConfig } = require("../config");
 const { hasChinese, twName, twUniverse, twseCodeQuery, twSharesOutstanding } = require("./twse");
 const { GLOBAL_MARKET_OPTIONS } = require("../globalMarket");
+const { cloneMarketWindGroups } = require("../windMarket");
 
 function cleanSymbol(value) {
   return String(value || "").trim().toUpperCase().slice(0, 24);
@@ -279,6 +280,33 @@ async function globalMarketOptionsResponse() {
     }
   }));
   return { fetchedAt: new Date().toISOString(), options };
+}
+
+async function marketWindResponse() {
+  const config = await readConfig();
+  const slots = await Promise.all((config.marketWind?.slots || []).map(async slot => {
+    if (!slot) return null;
+    try {
+      return { ...slot, ...(await fetchQuote(slot)) };
+    } catch (error) {
+      return { ...slot, ok: false, error: error.message };
+    }
+  }));
+  return { fetchedAt: new Date().toISOString(), slots, groups: cloneMarketWindGroups() };
+}
+
+async function marketWindOptionsResponse() {
+  const groups = await Promise.all(cloneMarketWindGroups().map(async group => ({
+    name: group.name,
+    options: await Promise.all(group.options.map(async option => {
+      try {
+        return { ...option, group: group.name, ...(await fetchQuote(option)) };
+      } catch (error) {
+        return { ...option, group: group.name, ok: false, error: error.message };
+      }
+    })),
+  })));
+  return { fetchedAt: new Date().toISOString(), groups };
 }
 
 async function rankingResponse() {
@@ -639,6 +667,8 @@ module.exports = {
   quotesResponse,
   rankingResponse,
   globalMarketOptionsResponse,
+  marketWindResponse,
+  marketWindOptionsResponse,
   yahooSearch,
   detailResponse,
 };

@@ -207,5 +207,45 @@
         }
       ]
     }
-  ]
+  ],
+  "marketWind": {
+    "slots": [
+      {
+        "symbol": "ES=F",
+        "name": "標普500期貨",
+        "type": "期貨",
+        "group": "期貨"
+      },
+      {
+        "symbol": "NQ=F",
+        "name": "那斯達克期貨",
+        "type": "期貨",
+        "group": "期貨"
+      },
+      {
+        "symbol": "WTX&",
+        "name": "台指期近一",
+        "type": "期貨",
+        "group": "期貨"
+      },
+      {
+        "symbol": "CL=F",
+        "name": "原油",
+        "type": "商品",
+        "group": "商品"
+      },
+      {
+        "symbol": "USDTWD=X",
+        "name": "美元/新台幣",
+        "type": "匯率",
+        "group": "匯率"
+      },
+      {
+        "symbol": "ZARTWD=X",
+        "name": "南非幣/新台幣",
+        "type": "匯率",
+        "group": "匯率"
+      }
+    ]
+  }
 }
