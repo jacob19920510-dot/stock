@@ -1581,11 +1581,11 @@ body:not(.light) .placeholder-badge {
   height:44px;
   display:grid;
   place-items:center;
-  border:1px solid rgba(203,213,225,.9);
+  border:1px solid var(--card-border);
   border-radius:14px;
-  background:#fff;
-  color:#2563eb;
-  box-shadow:0 8px 18px rgba(37,99,235,.08);
+  background:color-mix(in srgb,var(--panel) 94%,transparent);
+  color:var(--blue);
+  box-shadow:0 2px 6px rgba(15,35,65,.03);
 }
 
 .currency-refresh svg,
@@ -1608,7 +1608,7 @@ body:not(.light) .placeholder-badge {
   display:grid;
   grid-template-columns:minmax(0,1fr) 56px minmax(0,1fr);
   gap:16px 12px;
-  align-items:end;
+  align-items:start;
 }
 
 .currency-field {
@@ -1724,7 +1724,7 @@ body:not(.light) .placeholder-badge {
 .currency-converter .currency-converter-grid {
   grid-template-columns:minmax(0,1fr) 48px minmax(0,1fr);
   gap:12px 10px;
-  align-items:center;
+  align-items:start;
 }
 
 .currency-converter .currency-field {
@@ -1746,9 +1746,12 @@ body:not(.light) .placeholder-badge {
 .currency-converter .currency-swap {
   width:40px;
   height:40px;
+  margin-top:22px;
   align-self:center;
+  justify-self:center;
   border-radius:13px;
-  box-shadow:0 6px 14px rgba(37,99,235,.06);
+  background:color-mix(in srgb,var(--panel) 94%,transparent);
+  box-shadow:0 2px 6px rgba(15,35,65,.03);
 }
 
 .currency-converter .currency-amount-field {
@@ -1768,7 +1771,7 @@ body:not(.light) .placeholder-badge {
 
 .currency-converter .currency-result-display {
   align-self:start;
-  padding:2px 4px 0 14px;
+  padding:2px 4px 0 20px;
   gap:10px;
 }
 
