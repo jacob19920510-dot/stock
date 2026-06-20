@@ -2,8 +2,8 @@ const http = require("node:http");
 const fs = require("node:fs/promises");
 const path = require("node:path");
 
-const { readConfig, readWatchlists, createWatchlist, updateWatchlist, deleteWatchlist, addWatchSymbol, removeWatchSymbol, reorderWatchSymbols, reorderWatchlists, readGlobalMarket, updateGlobalMarket, updateMarketWind } = require("./config");
-const { quotesResponse, rankingResponse, yahooSearch, detailResponse, globalMarketOptionsResponse, marketWindResponse, marketWindOptionsResponse } = require("./services/yahoo");
+const { readConfig, readWatchlists, createWatchlist, updateWatchlist, deleteWatchlist, addWatchSymbol, removeWatchSymbol, reorderWatchSymbols, reorderWatchlists, readGlobalMarket, updateGlobalMarket, updateMarketWind, readCurrency, updateCurrency, readProfile, updateProfile } = require("./config");
+const { quotesResponse, rankingResponse, yahooSearch, detailResponse, globalMarketOptionsResponse, marketWindResponse, marketWindOptionsResponse, currencyResponse, currencyOptionsResponse } = require("./services/yahoo");
 const { twUniverse } = require("./services/twse");
 
 const PORT = Number(process.env.PORT || 8000);
@@ -58,6 +58,10 @@ async function selfTest() {
   if (marketWind.slots.length !== 6) throw new Error("market wind slots failed");
   const marketWindOptions = await marketWindOptionsResponse();
   if (marketWindOptions.groups.reduce((count, group) => count + group.options.length, 0) !== 17) throw new Error("market wind options failed");
+  const currency = await currencyResponse();
+  if ((currency.quotes || []).length !== 6) throw new Error("currency quotes failed");
+  const currencyOptions = await currencyOptionsResponse();
+  if ((currencyOptions.options || []).length !== 6) throw new Error("currency options failed");
   console.log(`ok: ${data.groups.reduce((sum, group) => sum + group.quotes.length, 0)} quotes, detail ${detail.daily.length} days`);
 }
 
@@ -73,10 +77,16 @@ const server = http.createServer(async (req, res) => {
   try {
     const url = new URL(req.url, `http://${req.headers.host}`);
     if (req.method === "GET" && url.pathname === "/api/config") return json(res, 200, await readConfig());
+    if (req.method === "GET" && url.pathname === "/api/profile") return json(res, 200, await readProfile());
+    if (req.method === "POST" && url.pathname === "/api/profile") return json(res, 200, await updateProfile(req));
     if (req.method === "GET" && url.pathname === "/api/global-market") return json(res, 200, await readGlobalMarket());
     if (req.method === "GET" && url.pathname === "/api/global-market/options") return json(res, 200, await globalMarketOptionsResponse());
     if (req.method === "GET" && url.pathname === "/api/market-wind") return json(res, 200, await marketWindResponse());
     if (req.method === "GET" && url.pathname === "/api/market-wind/options") return json(res, 200, await marketWindOptionsResponse());
+    if (req.method === "GET" && url.pathname === "/api/currency/config") return json(res, 200, await readCurrency());
+    if (req.method === "GET" && url.pathname === "/api/currency") return json(res, 200, await currencyResponse());
+    if (req.method === "GET" && url.pathname === "/api/currency/options") return json(res, 200, await currencyOptionsResponse());
+    if (req.method === "POST" && url.pathname === "/api/currency") return json(res, 200, await updateCurrency(req));
     if (req.method === "GET" && url.pathname === "/api/quotes") return json(res, 200, await quotesResponse());
     if (req.method === "GET" && url.pathname === "/api/rankings") return json(res, 200, await rankingResponse());
     if (req.method === "GET" && url.pathname === "/api/search") return json(res, 200, await yahooSearch(url.searchParams.get("market"), url.searchParams.get("q")));

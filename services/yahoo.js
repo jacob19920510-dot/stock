@@ -2,6 +2,7 @@ const { readConfig } = require("../config");
 const { hasChinese, twName, twUniverse, twseCodeQuery, twSharesOutstanding } = require("./twse");
 const { GLOBAL_MARKET_OPTIONS } = require("../globalMarket");
 const { cloneMarketWindGroups } = require("../windMarket");
+const { cloneCurrencyOptions, CURRENCY_OPTION_MAP, normalizeCurrencyConfig } = require("../currencyMarket");
 
 function cleanSymbol(value) {
   return String(value || "").trim().toUpperCase().slice(0, 24);
@@ -307,6 +308,85 @@ async function marketWindOptionsResponse() {
     })),
   })));
   return { fetchedAt: new Date().toISOString(), groups };
+}
+
+function syntheticCurrencyQuote(option, fetchedAt) {
+  return {
+    code: option.code,
+    symbol: option.symbol,
+    name: option.name,
+    label: option.label,
+    flag: option.flag,
+    rate: 1,
+    price: 1,
+    change: null,
+    changePercent: null,
+    updatedAt: fetchedAt,
+    sparkline: [],
+    synthetic: true,
+    ok: true,
+  };
+}
+
+async function currencyResponse() {
+  const config = await readConfig();
+  const currency = normalizeCurrencyConfig(config.currency);
+  const options = cloneCurrencyOptions();
+  const fetchedAt = new Date().toISOString();
+  const quotes = await Promise.all(options.map(async option => {
+    if (option.synthetic) return syntheticCurrencyQuote(option, fetchedAt);
+    try {
+      const quote = await fetchQuote({ symbol: option.symbol, name: option.label, type: "匯率" });
+      return {
+        code: option.code,
+        symbol: option.symbol,
+        name: option.name,
+        label: option.label,
+        flag: option.flag,
+        rate: quote.price,
+        price: quote.price,
+        change: quote.change,
+        changePercent: quote.changePercent,
+        updatedAt: quote.updatedAt || fetchedAt,
+        sparkline: quote.sparkline || [],
+        ok: true,
+      };
+    } catch (error) {
+      return {
+        code: option.code,
+        symbol: option.symbol,
+        name: option.name,
+        label: option.label,
+        flag: option.flag,
+        rate: null,
+        price: null,
+        change: null,
+        changePercent: null,
+        updatedAt: fetchedAt,
+        sparkline: [],
+        ok: false,
+        error: error.message,
+      };
+    }
+  }));
+  return {
+    fetchedAt,
+    favorites: currency.favorites,
+    from: currency.from,
+    to: currency.to,
+    quotes,
+  };
+}
+
+async function currencyOptionsResponse() {
+  const data = await currencyResponse();
+  return {
+    fetchedAt: data.fetchedAt,
+    options: data.quotes.map(quote => ({
+      ...quote,
+      symbol: CURRENCY_OPTION_MAP.get(quote.code)?.symbol || quote.symbol,
+    })),
+  };
 }
 
 async function rankingResponse() {
@@ -669,6 +749,8 @@ module.exports = {
   globalMarketOptionsResponse,
   marketWindResponse,
   marketWindOptionsResponse,
+  currencyResponse,
+  currencyOptionsResponse,
   yahooSearch,
   detailResponse,
 };

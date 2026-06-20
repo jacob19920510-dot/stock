@@ -35,7 +35,7 @@
               <span class="brand-subtitle">你的專屬投資助手</span>
             </div>
           </div>
-          <button class="sidebar-toggle" id="sidebarToggle" type="button" aria-label="切換側邊欄">
+          <button class="sidebar-toggle" id="sidebarToggle" type="button" aria-label="切換側欄">
             <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path d="M15 6 9 12l6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
@@ -82,7 +82,7 @@
           </div>
           <div class="side-user-copy">
             <div class="side-user-row">
-              <strong id="sideUserName">投資者</strong>
+              <strong id="sideUserName">投資人</strong>
               <span class="brand-badge">Pro</span>
             </div>
             <span class="side-user-time">上次更新</span>
@@ -120,7 +120,7 @@
             </div>
             <div class="topbar-meta">
               <span class="topbar-badge topbar-badge-soft">即時行情</span>
-              <span class="topbar-refresh">最後更新：<span id="refreshTime">-</span></span>
+              <span class="topbar-refresh">最後更新: <span id="refreshTime">-</span></span>
             </div>
           </div>
           <div class="topbar-actions">
@@ -131,9 +131,9 @@
               </select>
               <div class="search-field">
                 <span class="search-icon" aria-hidden="true"></span>
-                <input id="search" placeholder="搜尋股票代碼 / 名稱" autocomplete="off">
+                <input id="search" placeholder="搜尋股票代號 / 名稱" autocomplete="off">
               </div>
-              <button class="theme-toggle" id="themeButton" type="button" title="切換主題" aria-label="切換主題">
+              <button class="theme-toggle" id="themeButton" type="button" data-theme-toggle title="切換主題" aria-label="切換主題">
                 <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
                 <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
               </button>
@@ -186,11 +186,113 @@
         </div>
       </section>
 
-      <section class="module-view module-placeholder" data-module-view="currency">
-        <div class="placeholder-shell">
-          <div class="placeholder-badge">即將推出</div>
-          <h1>外幣換算器</h1>
-          <p>這個模塊先保留空白版位，後續會在這裡補上匯率換算與相關工具。</p>
+      <section class="module-view currency-module" data-module-view="currency">
+        <div class="currency-shell">
+          <header class="currency-hero">
+            <div>
+              <h1>外幣換算器</h1>
+              <p>即時匯率換算，支援多種常用幣別互轉</p>
+            </div>
+            <button class="theme-toggle currency-theme-toggle" type="button" data-theme-toggle title="切換主題" aria-label="切換主題">
+              <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+              <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            </button>
+          </header>
+
+          <div class="currency-grid">
+            <section class="currency-panel currency-converter" aria-labelledby="currencyConverterTitle">
+              <div class="currency-panel-head">
+                <div>
+                  <h2 id="currencyConverterTitle">即時換算</h2>
+                  <p>預設以外幣對 TWD，也可自由切換其他幣別</p>
+                </div>
+              </div>
+              <div class="currency-converter-grid">
+                <div class="currency-field">
+                  <label for="currencyFromSelect">從</label>
+                  <select id="currencyFromSelect"></select>
+                </div>
+                <button class="currency-swap" id="currencySwapButton" type="button" aria-label="交換幣別">
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M7 7h11m0 0-3-3m3 3-3 3M17 17H6m0 0 3-3m-3 3 3 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+                <div class="currency-field">
+                  <label for="currencyToSelect">到</label>
+                  <select id="currencyToSelect"></select>
+                </div>
+                <div class="currency-field currency-amount-field">
+                  <label for="currencyAmountInput">金額</label>
+                  <input id="currencyAmountInput" type="number" min="0" step="0.01" inputmode="decimal">
+                  <div class="currency-amount-actions">
+                    <button type="button" data-currency-add="100">+100</button>
+                    <button type="button" data-currency-add="1000">+1,000</button>
+                    <button type="button" data-currency-add="10000">+10,000</button>
+                    <button type="button" data-currency-clear>全部清空</button>
+                  </div>
+                </div>
+                <div class="currency-result-display">
+                  <span class="currency-result-label">結果</span>
+                  <strong id="currencyResultValue">-</strong>
+                </div>
+              </div>
+              <div class="currency-converter-footer">
+                <div class="currency-result-meta">
+                  <span id="currencyRateText">-</span>
+                  <span id="currencyChangeText">-</span>
+                </div>
+                <div class="currency-footer-right">
+                  <div class="currency-result-updated">更新時間: <span id="currencyUpdatedTime">-</span></div>
+                  <button class="currency-refresh currency-refresh-inline" id="currencyRefreshButton" type="button" aria-label="重新整理匯率">
+                    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <path d="M21 12a9 9 0 1 1-2.64-6.36M21 4v6h-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </section>
+
+            <section class="currency-panel currency-favorites-panel" aria-labelledby="currencyFavoritesTitle">
+              <div class="currency-panel-head">
+                <div>
+                  <h2 id="currencyFavoritesTitle">常用貨幣</h2>
+                  <p>快速帶入常用幣別，也可以管理清單</p>
+                </div>
+                <button class="currency-link-button" type="button" data-currency-manage-favorites>管理常用貨幣</button>
+              </div>
+              <div class="currency-favorites-list" id="currencyFavoritesList"></div>
+              <button class="currency-add-tile" type="button" data-currency-manage-favorites>
+                <span>+</span>
+                <span>新增貨幣</span>
+              </button>
+            </section>
+          </div>
+
+          <section class="currency-panel currency-table-panel" aria-labelledby="currencyRatesTitle">
+            <div class="currency-panel-head">
+              <div>
+                <h2 id="currencyRatesTitle">即時匯率</h2>
+                <p>以 TWD 為基準的即時匯率與簡易走勢</p>
+              </div>
+              <button class="currency-link-button" type="button" data-currency-manage-favorites>查看與管理</button>
+            </div>
+            <div class="currency-table-wrap">
+              <table class="currency-table">
+                <thead>
+                  <tr>
+                    <th>貨幣</th>
+                    <th>代碼</th>
+                    <th>對 TWD 匯率</th>
+                    <th>漲跌</th>
+                    <th>漲跌幅</th>
+                    <th>走勢圖</th>
+                    <th>操作</th>
+                  </tr>
+                </thead>
+                <tbody id="currencyTableBody"></tbody>
+              </table>
+            </div>
+          </section>
         </div>
       </section>
 
@@ -198,7 +300,7 @@
         <div class="placeholder-shell">
           <div class="placeholder-badge">內容預留中</div>
           <h1>使用教學</h1>
-          <p>這裡先建立空白教學頁，後續你可以直接補上操作說明、範例流程與常見問題。</p>
+          <p>這裡會逐步補上操作說明、使用流程與常見問題，方便你快速上手這個投資工作台。</p>
         </div>
       </section>
     </main>

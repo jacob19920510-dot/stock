@@ -2,17 +2,50 @@ const fs = require("node:fs/promises");
 const path = require("node:path");
 const { cloneGlobalMarketOptions, normalizeGlobalMarketSlots } = require("./globalMarket");
 const { cloneMarketWindGroups, defaultMarketWindSlots, normalizeMarketWindSlots } = require("./windMarket");
+const { cloneCurrencyOptions, normalizeCurrencyConfig } = require("./currencyMarket");
 
 const CONFIG_PATH = path.join(__dirname, "config.json");
 
-async function readConfig() {
+const DEFAULT_PROFILE = { name: "投資者", avatar: "" };
+
+function normalizeProfile(profile) {
+  const raw = profile && typeof profile === "object" ? profile : {};
+  return {
+    name: String(raw.name || DEFAULT_PROFILE.name).trim().slice(0, 24) || DEFAULT_PROFILE.name,
+    avatar: String(raw.avatar || "").trim(),
+  };
+}
+
+async function readProfile() {
+  const config = await readConfigFile();
+  return normalizeProfile(config.profile);
+}
+
+async function updateProfile(req) {
+  const body = await readBody(req);
+  const config = await readConfigFile();
+  const profile = normalizeProfile({
+    name: body.name,
+    avatar: body.avatar,
+  });
+  config.profile = profile;
+  await writeConfig(config);
+  return { ok: true, profile };
+}
+
+async function readConfigFile() {
   const text = await fs.readFile(CONFIG_PATH, "utf8");
-  const config = JSON.parse(text);
+  return JSON.parse(text);
+}
+
+async function readConfig() {
+  const config = await readConfigFile();
   return {
     refreshSeconds: Number(config.refreshSeconds) || 30,
     groups: normalizeGroups(config.groups),
     watchlists: normalizeWatchlists(config),
     marketWind: normalizeMarketWind(config.marketWind),
+    currency: normalizeCurrencyConfig(config.currency),
   };
 }
 
@@ -132,6 +165,10 @@ function normalizeMarketWind(marketWind) {
   return { slots: normalizeMarketWindSlots(marketWind?.slots || defaultMarketWindSlots()) };
 }
 
+function normalizeCurrency(currency) {
+  return normalizeCurrencyConfig(currency);
+}
+
 async function readBody(req) {
   const chunks = [];
   for await (const chunk of req) chunks.push(chunk);
@@ -145,7 +182,9 @@ async function addWatchSymbol(req, watchlistId) {
   const type = String(body.type || marketType(symbol)).trim().slice(0, 20);
   if (!canWatch(type, symbol)) throw new Error("cannot add this type to watchlist");
 
-  const config = await readConfig();
+  const config = await readConfigFile();
+  config.groups = normalizeGroups(config.groups);
+  config.watchlists = normalizeWatchlists(config);
   const list = findWatchlist(config, watchlistId);
   if (!list.symbols.some(x => cleanSymbol(x.symbol) === symbol)) {
     list.symbols.push({
@@ -161,7 +200,8 @@ async function addWatchSymbol(req, watchlistId) {
 async function removeWatchSymbol(req, watchlistId) {
   const body = await readBody(req);
   const symbol = cleanSymbol(body.symbol);
-  const config = await readConfig();
+  const config = await readConfigFile();
+  config.watchlists = normalizeWatchlists(config);
   const list = findWatchlist(config, watchlistId);
   list.symbols = list.symbols.filter(x => cleanSymbol(x.symbol) !== symbol);
   await writeConfig(config);
@@ -171,7 +211,8 @@ async function removeWatchSymbol(req, watchlistId) {
 async function reorderWatchSymbols(req, watchlistId) {
   const body = await readBody(req);
   const order = Array.isArray(body.symbols) ? body.symbols.map(cleanSymbol).filter(Boolean) : [];
-  const config = await readConfig();
+  const config = await readConfigFile();
+  config.watchlists = normalizeWatchlists(config);
   const list = findWatchlist(config, watchlistId);
   const bySymbol = new Map(list.symbols.map(item => [cleanSymbol(item.symbol), item]));
   list.symbols = [...order.map(symbol => bySymbol.get(symbol)).filter(Boolean), ...list.symbols.filter(item => !order.includes(cleanSymbol(item.symbol)))];
@@ -182,7 +223,8 @@ async function reorderWatchSymbols(req, watchlistId) {
 async function reorderWatchlists(req) {
   const body = await readBody(req);
   const order = Array.isArray(body.watchlistIds) ? body.watchlistIds.map(id => String(id || "").trim()).filter(Boolean) : [];
-  const config = await readConfig();
+  const config = await readConfigFile();
+  config.watchlists = normalizeWatchlists(config);
   const byId = new Map(config.watchlists.map(item => [item.id, item]));
   const seen = new Set();
   const reordered = [];
@@ -211,7 +253,8 @@ async function readWatchlists() {
 
 async function createWatchlist(req) {
   const body = await readBody(req);
-  const config = await readConfig();
+  const config = await readConfigFile();
+  config.watchlists = normalizeWatchlists(config);
   const name = ensureUniqueWatchlistName(config, body.name || "新清單");
   const used = new Set(config.watchlists.map(row => row.id));
   const list = { id: makeWatchlistId(name, used), name, locked: false, symbols: [] };
@@ -222,7 +265,8 @@ async function createWatchlist(req) {
 
 async function updateWatchlist(req, id) {
   const body = await readBody(req);
-  const config = await readConfig();
+  const config = await readConfigFile();
+  config.watchlists = normalizeWatchlists(config);
   const list = findWatchlist(config, id);
   list.name = ensureUniqueWatchlistName(config, body.name, list.id);
   await writeConfig(config);
@@ -230,7 +274,8 @@ async function updateWatchlist(req, id) {
 }
 
 async function deleteWatchlist(id) {
-  const config = await readConfig();
+  const config = await readConfigFile();
+  config.watchlists = normalizeWatchlists(config);
   if (config.watchlists.length <= 1) throw new Error("at least one watchlist is required");
   const list = findWatchlist(config, id);
   config.watchlists = config.watchlists.filter(row => row.id !== list.id);
@@ -239,7 +284,8 @@ async function deleteWatchlist(id) {
 }
 
 async function readGlobalMarket() {
-  const config = await readConfig();
+  const config = await readConfigFile();
+  config.groups = normalizeGroups(config.groups);
   const group = indexGroup(config);
   return {
     slots: normalizeGlobalMarketSlots(group.symbols),
@@ -250,7 +296,8 @@ async function readGlobalMarket() {
 async function updateGlobalMarket(req) {
   const body = await readBody(req);
   const slots = normalizeGlobalMarketSlots(body.slots || body.symbols, { strict: true });
-  const config = await readConfig();
+  const config = await readConfigFile();
+  config.groups = normalizeGroups(config.groups);
   const group = indexGroup(config);
   group.symbols = slots;
   await writeConfig(config);
@@ -269,10 +316,31 @@ async function readMarketWind() {
 async function updateMarketWind(req) {
   const body = await readBody(req);
   const slots = normalizeMarketWindSlots(body.slots, { strict: true });
-  const config = await readConfig();
+  const config = await readConfigFile();
   config.marketWind = { slots };
   await writeConfig(config);
   return { ok: true, slots, groups: cloneMarketWindGroups() };
+}
+
+async function readCurrency() {
+  const config = await readConfig();
+  return {
+    ...normalizeCurrency(config.currency),
+    options: cloneCurrencyOptions(),
+  };
+}
+
+async function updateCurrency(req) {
+  const body = await readBody(req);
+  const config = await readConfigFile();
+  const currency = normalizeCurrency({
+    favorites: body.favorites,
+    from: body.from,
+    to: body.to,
+  });
+  config.currency = currency;
+  await writeConfig(config);
+  return { ok: true, currency, options: cloneCurrencyOptions() };
 }
 
 module.exports = {
@@ -293,4 +361,8 @@ module.exports = {
   updateGlobalMarket,
   readMarketWind,
   updateMarketWind,
+  readCurrency,
+  updateCurrency,
+  readProfile,
+  updateProfile,
 };

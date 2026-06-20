@@ -1,8 +1,9 @@
-const cardsEl = document.querySelector('#cards'), windCardsEl = document.querySelector('#windCards'), watchPanel = document.querySelector('#watchPanel'), rankPanel = document.querySelector('#rankPanel'), rankLayer = document.querySelector('#rankLayer'), rankModal = document.querySelector('#rankModal'), detailLayer = document.querySelector('#detailLayer'), detailEl = document.querySelector('#detail'), marketLayer = document.querySelector('#marketLayer'), marketModal = document.querySelector('#marketModal'), watchlistLayer = document.querySelector('#watchlistLayer'), watchlistModal = document.querySelector('#watchlistModal'), profileLayer = document.querySelector('#profileLayer'), profileModal = document.querySelector('#profileModal'), profileButton = document.querySelector('#profileButton'), sideUserAvatarEl = document.querySelector('#sideUserAvatar'), sideUserNameEl = document.querySelector('#sideUserName'), globalMarketEditBtn = document.querySelector('#globalMarketEditBtn'), globalMarketDoneBtn = document.querySelector('#globalMarketDoneBtn'), globalMarketCancelBtn = document.querySelector('#globalMarketCancelBtn'), marketWindEditBtn = document.querySelector('#marketWindEditBtn'), marketWindDoneBtn = document.querySelector('#marketWindDoneBtn'), marketWindCancelBtn = document.querySelector('#marketWindCancelBtn'), suggestEl = document.querySelector('#suggest'), searchEl = document.querySelector('#search'), marketEl = document.querySelector('#market'), refreshButton = document.querySelector('#refreshButton'), themeButton = document.querySelector('#themeButton'), refreshTimeEl = document.querySelector('#refreshTime'), sidebarEl = document.querySelector('#sidebar'), sidebarToggle = document.querySelector('#sidebarToggle'), sidebarResizeHandle = document.querySelector('#sidebarResizeHandle'), moduleViews = [...document.querySelectorAll('[data-module-view]')], moduleButtons = [...document.querySelectorAll('[data-module]')];
-let detailData=null, detailFetchedAt=null, detailWatchAllowed=true, chartMode='k', kPeriod='d', chartState=null, latest=null, rankings=null, globalMarketState=null, globalMarketDraft=null, globalMarketEditMode=false, globalMarketDragging=false, marketWindState=null, marketWindDraft=null, marketWindEditMode=false, marketWindDragging=false, marketWindPickerIndex=null, marketWindOptions=null, marketWindOptionsPromise=null, watchDragging=false, watchTabsDrag=null, watchTabsClickSuppressed=false, watchlistSortDrag=null, watchViewAnimating=false, watchViewMode=localStorage.getItem('watchViewMode')==='cards'?'cards':'table', activeWatchlistId=localStorage.getItem('activeWatchlistId')||'', watchlistPickerQuote=null, watchlistDialog=null, profileDraftAvatar='', globalMarketPickerIndex=null, globalMarketOptions=null, globalMarketOptionsPromise=null, rankMarkets={gainers:'tw',losers:'tw',volume:'tw'}, activeRankTab='gainers', searchTimer=null, loadTimer=null, activeModule=localStorage.getItem('activeModule')||'dashboard', sidebarCollapsed=localStorage.getItem('sidebarCollapsed')==='true', sidebarWidth=Number(localStorage.getItem('sidebarWidth'))||276, sidebarResizeState=null, moduleTransitionTimer=null;
+const cardsEl = document.querySelector('#cards'), windCardsEl = document.querySelector('#windCards'), watchPanel = document.querySelector('#watchPanel'), rankPanel = document.querySelector('#rankPanel'), rankLayer = document.querySelector('#rankLayer'), rankModal = document.querySelector('#rankModal'), detailLayer = document.querySelector('#detailLayer'), detailEl = document.querySelector('#detail'), marketLayer = document.querySelector('#marketLayer'), marketModal = document.querySelector('#marketModal'), watchlistLayer = document.querySelector('#watchlistLayer'), watchlistModal = document.querySelector('#watchlistModal'), profileLayer = document.querySelector('#profileLayer'), profileModal = document.querySelector('#profileModal'), profileButton = document.querySelector('#profileButton'), sideUserAvatarEl = document.querySelector('#sideUserAvatar'), sideUserNameEl = document.querySelector('#sideUserName'), globalMarketEditBtn = document.querySelector('#globalMarketEditBtn'), globalMarketDoneBtn = document.querySelector('#globalMarketDoneBtn'), globalMarketCancelBtn = document.querySelector('#globalMarketCancelBtn'), marketWindEditBtn = document.querySelector('#marketWindEditBtn'), marketWindDoneBtn = document.querySelector('#marketWindDoneBtn'), marketWindCancelBtn = document.querySelector('#marketWindCancelBtn'), suggestEl = document.querySelector('#suggest'), searchEl = document.querySelector('#search'), marketEl = document.querySelector('#market'), refreshButton = document.querySelector('#refreshButton'), themeButton = document.querySelector('#themeButton'), themeButtons = [...document.querySelectorAll('[data-theme-toggle]')], refreshTimeEl = document.querySelector('#refreshTime'), sidebarEl = document.querySelector('#sidebar'), sidebarToggle = document.querySelector('#sidebarToggle'), sidebarResizeHandle = document.querySelector('#sidebarResizeHandle'), currencyFromSelect = document.querySelector('#currencyFromSelect'), currencyToSelect = document.querySelector('#currencyToSelect'), currencyAmountInput = document.querySelector('#currencyAmountInput'), currencyResultValueEl = document.querySelector('#currencyResultValue'), currencyRateTextEl = document.querySelector('#currencyRateText'), currencyChangeTextEl = document.querySelector('#currencyChangeText'), currencyUpdatedTimeEl = document.querySelector('#currencyUpdatedTime'), currencyFavoritesListEl = document.querySelector('#currencyFavoritesList'), currencyTableBodyEl = document.querySelector('#currencyTableBody'), currencyRefreshButton = document.querySelector('#currencyRefreshButton'), moduleViews = [...document.querySelectorAll('[data-module-view]')], moduleButtons = [...document.querySelectorAll('[data-module]')];
+let detailData=null, detailFetchedAt=null, detailWatchAllowed=true, chartMode='k', kPeriod='d', chartState=null, latest=null, rankings=null, globalMarketState=null, globalMarketDraft=null, globalMarketEditMode=false, globalMarketDragging=false, marketWindState=null, marketWindDraft=null, marketWindEditMode=false, marketWindDragging=false, marketWindPickerIndex=null, marketWindOptions=null, marketWindOptionsPromise=null, currencyState=null, currencyOptions=null, currencyPickerMode=null, currencyPersistPromise=Promise.resolve(), currencyPersistRevision=0, currencyFavoriteThrottleUntil=0, currencyLocalSnapshot=null, watchDragging=false, watchTabsDrag=null, watchTabsClickSuppressed=false, watchlistSortDrag=null, watchViewAnimating=false, watchViewMode=localStorage.getItem('watchViewMode')==='cards'?'cards':'table', activeWatchlistId=localStorage.getItem('activeWatchlistId')||'', watchlistPickerQuote=null, watchlistDialog=null, profileDraftAvatar='', globalMarketPickerIndex=null, globalMarketOptions=null, globalMarketOptionsPromise=null, rankMarkets={gainers:'tw',losers:'tw',volume:'tw'}, activeRankTab='gainers', searchTimer=null, loadTimer=null, activeModule=localStorage.getItem('activeModule')||'dashboard', sidebarCollapsed=localStorage.getItem('sidebarCollapsed')==='true', sidebarWidth=Number(localStorage.getItem('sidebarWidth'))||276, sidebarResizeState=null, moduleTransitionTimer=null;
 const SIDEBAR_MIN_WIDTH=220, SIDEBAR_MAX_WIDTH=380, SIDEBAR_COLLAPSED_WIDTH=96, SIDEBAR_MOBILE_BREAKPOINT=900;
 const DEFAULT_PROFILE={ name:'投資者', avatar:'' };
-let profileState=loadProfile();
+let profileState={...DEFAULT_PROFILE};
+loadProfile();
 const fmtNumber=(v,d=2)=>Number.isFinite(v)?v.toLocaleString('zh-TW',{maximumFractionDigits:d}):'-';
 const fmtInt=v=>Number.isFinite(v)?Math.round(v).toLocaleString('zh-TW'):'-';
 const fmtTime=v=>v?new Date(v).toLocaleString('zh-TW',{hour12:false}):'-';
@@ -12,19 +13,45 @@ const profileAvatarMarkup=avatar=>avatar?'<img src="'+avatar+'" alt="使用者�
 const canWatch=q=>q?.type==='台股'||q?.type==='美股';
 const globalMarketOptionLabel=o=>o?.region?o.region+' · '+o.name:o?.name||'-';
 const sectionTitleIcon=kind=>kind==='watch'?'<span class="section-title-icon section-title-icon-watch" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.9l2.8 5.68 6.27.91-4.53 4.42 1.07 6.24L12 17.2 6.38 20.15l1.07-6.24L2.92 9.49l6.27-.91L12 2.9z"/></svg></span>':'';
+const CURRENCY_FAVORITES_LIMIT=5;
+const CURRENCY_FLAG_SVGS={
+  USD:'<svg viewBox="0 0 28 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="28" height="20" rx="5" fill="#fff"/><path d="M0 2h28v2H0zm0 4h28v2H0zm0 4h28v2H0zm0 4h28v2H0zm0 4h28v2H0z" fill="#dc2626"/><rect width="12" height="10" rx="3" fill="#1d4ed8"/></svg>',
+  CNY:'<svg viewBox="0 0 28 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="28" height="20" rx="5" fill="#ef4444"/><circle cx="8" cy="7" r="3" fill="#fde047"/></svg>',
+  JPY:'<svg viewBox="0 0 28 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="28" height="20" rx="5" fill="#fff"/><circle cx="14" cy="10" r="5" fill="#e11d48"/></svg>',
+  ZAR:'<svg viewBox="0 0 28 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="28" height="20" rx="5" fill="#dc2626"/><path d="M0 0h28v10H0z" fill="#059669"/><path d="M0 0l13 10L0 20z" fill="#111827"/><path d="M0 3l10 7L0 17z" fill="#fbbf24"/><path d="M13 10 28 4v12z" fill="#2563eb"/></svg>',
+  EUR:'<svg viewBox="0 0 28 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="28" height="20" rx="5" fill="#1d4ed8"/><circle cx="14" cy="10" r="5" fill="none" stroke="#fde047" stroke-width="2" stroke-dasharray="1.2 2.4"/></svg>',
+  TWD:'<svg viewBox="0 0 28 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="28" height="20" rx="5" fill="#ef4444"/><rect width="12" height="9" rx="3" fill="#1d4ed8"/><circle cx="6" cy="4.5" r="2.2" fill="#fff"/></svg>'
+};
+const currencyFlag=quote=>'<span class="currency-flag-svg" aria-hidden="true">'+(CURRENCY_FLAG_SVGS[quote?.code]||CURRENCY_FLAG_SVGS.TWD)+'</span>';
+const currencyDisplayName=quote=>quote?.name||quote?.code||'-';
+const currencyLabel=quote=>quote?.label||((quote?.code||'-')+' '+currencyDisplayName(quote));
+function currencyQuoteMap(){ return new Map((currencyState?.quotes||[]).map(quote=>[quote.code,quote])); }
+function currencyOptionList(){ return Array.isArray(currencyOptions)&&currencyOptions.length?currencyOptions:(currencyState?.quotes||[]); }
+function activeCurrencyQuote(code){ return currencyQuoteMap().get(code)||null; }
+function currencyRate(code){ const quote=activeCurrencyQuote(code); return Number.isFinite(quote?.rate)?quote.rate:null; }
+function currencySnapshot(state=currencyState){ return state?{favorites:[...(state.favorites||[])],from:state.from,to:state.to}:null; }
+function applyCurrencyServerState(serverState){
+  if(!serverState) return null;
+  if(currencyLocalSnapshot){
+    return { ...serverState, ...currencyLocalSnapshot, favorites:[...(currencyLocalSnapshot.favorites||[])] };
+  }
+  return serverState;
+}
+function convertCurrencyAmount(amount, fromCode, toCode){ const amountValue=Number(amount), fromRate=currencyRate(fromCode), toRate=currencyRate(toCode); if(!Number.isFinite(amountValue)) return null; if(fromCode===toCode) return amountValue; if(fromCode==='TWD'&&Number.isFinite(toRate)&&toRate) return amountValue/toRate; if(toCode==='TWD'&&Number.isFinite(fromRate)) return amountValue*fromRate; if(Number.isFinite(fromRate)&&Number.isFinite(toRate)&&toRate) return amountValue*fromRate/toRate; return null; }
+function currencyUpdatedAt(){ const rows=(currencyState?.quotes||[]).filter(quote=>quote?.updatedAt).map(quote=>quote.updatedAt).sort(); return rows[rows.length-1]||currencyState?.fetchedAt||null; }
 function cloneSlots(slots){ return Array.isArray(slots)?slots.slice(0,5).map(s=>s?{...s}:null):[]; }
 function normalizeSlots(slots){ const rows=cloneSlots(slots); while(rows.length<5) rows.push(null); return rows; }
 function cloneWindSlots(slots){ return Array.isArray(slots)?slots.slice(0,6).map(s=>s?{...s}:null):[]; }
 function normalizeWindSlots(slots){ const rows=cloneWindSlots(slots); while(rows.length<6) rows.push(null); return rows; }
-function quoteMap(){ return new Map([...(latest?.groups||[]).flatMap(g=>g.quotes||[]),...(latest?.watchlists||[]).flatMap(g=>g.quotes||[]),...(marketWindState?.slots||[]).filter(Boolean)].map(q=>[q.symbol,q])); }
+function quoteMap(){ return new Map([...(latest?.groups||[]).flatMap(g=>g.quotes||[]),...(latest?.watchlists||[]).flatMap(g=>g.quotes||[]),...(marketWindState?.slots||[]).filter(Boolean),...(currencyState?.quotes||[]).filter(Boolean)].map(q=>[q.symbol||q.code,q])); }
 function optionMap(){ return new Map((globalMarketOptions||[]).map(q=>[q.symbol,q])); }
 function currentMarketSlots(){ return normalizeSlots(globalMarketEditMode&&Array.isArray(globalMarketDraft)?globalMarketDraft:globalMarketState?.slots); }
 function currentWindSlots(){ return normalizeWindSlots(marketWindEditMode&&Array.isArray(marketWindDraft)?marketWindDraft:marketWindState?.slots); }
 function resolveMarketRow(slot, quotes, options){ if(!slot?.symbol)return null; return quotes.get(slot.symbol) || options.get(slot.symbol) || slot; }
 function isMarketSlotUsed(symbol, index, slots){ return symbol && slots.some((slot,i)=>i!==index&&slot?.symbol===symbol); }
 function flatGroups(data){ return Object.fromEntries(data.groups.map(g=>[g.name,g.quotes])); }
-function loadProfile(){ try{ const raw=JSON.parse(localStorage.getItem('profileSettings')||'{}'); return { ...DEFAULT_PROFILE, ...(raw&&typeof raw==='object'?raw:{}) }; }catch{ return { ...DEFAULT_PROFILE }; } }
-function saveProfile(){ localStorage.setItem('profileSettings', JSON.stringify(profileState)); renderProfileCard(); }
+function loadProfile(){ return fetch('/api/profile',{cache:'no-store'}).then(r=>r.json()).then(data=>{ profileState={ ...DEFAULT_PROFILE, ...(data&&typeof data==='object'?data:{}) }; renderProfileCard(); }).catch(()=>{ profileState={ ...DEFAULT_PROFILE }; renderProfileCard(); }); }
+function saveProfile(){ return fetch('/api/profile',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(profileState)}).then(r=>r.json()).then(()=>renderProfileCard()).catch(()=>renderProfileCard()); }
 function renderProfileCard(){ if(sideUserNameEl) sideUserNameEl.textContent=profileState.name||DEFAULT_PROFILE.name; if(sideUserAvatarEl) sideUserAvatarEl.innerHTML=profileAvatarMarkup(profileState.avatar); }
 function setRefreshTime(){ const t=fmtTime(latest?.fetchedAt); document.querySelector('#sideTime').textContent=t; refreshTimeEl.textContent=t; }
 function isDashboardModule(){ return activeModule==='dashboard'; }
@@ -69,6 +96,10 @@ function setActiveModule(nextModule){
     moduleTransitionTimer=null;
   }, 260);
   if(activeModule==='dashboard') renderAll();
+  if(activeModule==='currency'){
+    renderCurrency();
+    if(!currencyState) refreshCurrencyOnly().catch(console.error);
+  }
 }
 function toggleSidebar(){ sidebarCollapsed=!sidebarCollapsed; applySidebarState(); }
 function beginSidebarResize(event){
@@ -93,7 +124,7 @@ function endSidebarResize(event){
 function closeProfileSettings(){ document.body.classList.remove('profile-open'); profileModal.innerHTML=''; profileDraftAvatar=''; }
 function openProfileSettings(){
   profileDraftAvatar=profileState.avatar||'';
-  profileModal.innerHTML='<form class="profile-form" data-profile-form><div class="profile-modal-head"><div><h2>個人設定</h2><div class="market-modal-subtitle">更新你的顯示名稱與個人頭像。</div></div><button class="small-btn" type="button" data-close-profile>關閉</button></div><div class="profile-avatar-row"><div class="profile-avatar-preview" data-profile-avatar-preview>'+profileAvatarMarkup(profileDraftAvatar)+'</div><div class="profile-avatar-actions"><label class="profile-upload-label">上傳頭像<input type="file" accept="image/*" data-profile-avatar-input></label><button class="small-btn" type="button" data-profile-reset-avatar>移除頭像</button><div class="profile-helper">支援常見圖片格式，資料會保存在這台瀏覽器。</div></div></div><label class="watchlist-field"><span>顯示名稱</span><input class="watchlist-input" name="name" maxlength="24" autocomplete="off" placeholder="輸入你的名字" value="'+esc(profileState.name||DEFAULT_PROFILE.name)+'"></label><div class="watchlist-modal-actions"><button class="small-btn" type="button" data-close-profile>取消</button><button class="small-btn primary" type="submit">儲存設定</button></div></form>';
+  profileModal.innerHTML='<form class="profile-form" data-profile-form><div class="profile-modal-head"><div><h2>個人設定</h2><div class="market-modal-subtitle">更新你的顯示名稱與個人頭像。</div></div><button class="small-btn" type="button" data-close-profile>關閉</button></div><div class="profile-avatar-row"><div class="profile-avatar-preview" data-profile-avatar-preview>'+profileAvatarMarkup(profileDraftAvatar)+'</div><div class="profile-avatar-actions"><label class="profile-upload-label">上傳頭像<input type="file" accept="image/*" data-profile-avatar-input></label><button class="small-btn" type="button" data-profile-reset-avatar>移除頭像</button><div class="profile-helper">支援常見圖片格式，資料會保存在伺服器。</div></div></div><label class="watchlist-field"><span>顯示名稱</span><input class="watchlist-input" name="name" maxlength="24" autocomplete="off" placeholder="輸入你的名字" value="'+esc(profileState.name||DEFAULT_PROFILE.name)+'"></label><div class="watchlist-modal-actions"><button class="small-btn" type="button" data-close-profile>取消</button><button class="small-btn primary" type="submit">儲存設定</button></div></form>';
   document.body.classList.add('profile-open');
   requestAnimationFrame(()=>profileModal.querySelector('input[name="name"]')?.focus());
 }
@@ -104,14 +135,14 @@ async function handleProfileAvatarChange(input){
   profileDraftAvatar=await new Promise((resolve,reject)=>{ const reader=new FileReader(); reader.onload=()=>resolve(String(reader.result||'')); reader.onerror=()=>reject(reader.error); reader.readAsDataURL(file); });
   updateProfileAvatarPreview();
 }
-function submitProfileForm(form){
+async function submitProfileForm(form){
   const name=(new FormData(form).get('name')||'').toString().trim();
   profileState.name=name||DEFAULT_PROFILE.name;
   profileState.avatar=profileDraftAvatar||'';
-  saveProfile();
+  await saveProfile();
   closeProfileSettings();
 }
-async function load(){ const [quoteRes,rankRes,marketRes,windRes]=await Promise.all([fetch('/api/quotes',{cache:'no-store'}),fetch('/api/rankings',{cache:'no-store'}),fetch('/api/global-market',{cache:'no-store'}),fetch('/api/market-wind',{cache:'no-store'})]); latest=await quoteRes.json(); rankings=await rankRes.json(); globalMarketState=await marketRes.json(); marketWindState=await windRes.json(); setRefreshTime(); renderAll(); await refreshDetail().catch(()=>{}); clearTimeout(loadTimer); loadTimer=setTimeout(load,(latest.refreshSeconds||5)*1000); }
+async function load(){ const [quoteRes,rankRes,marketRes,windRes]=await Promise.all([fetch('/api/quotes',{cache:'no-store'}),fetch('/api/rankings',{cache:'no-store'}),fetch('/api/global-market',{cache:'no-store'}),fetch('/api/market-wind',{cache:'no-store'})]); latest=await quoteRes.json(); rankings=await rankRes.json(); globalMarketState=await marketRes.json(); marketWindState=await windRes.json(); setRefreshTime(); renderAll(); if(activeModule==='currency'){ if(!currencyState) await refreshCurrencyOnly(); else renderCurrency(); } await refreshDetail().catch(()=>{}); clearTimeout(loadTimer); loadTimer=setTimeout(load,(latest.refreshSeconds||5)*1000); }
 async function reloadWatch(){ const res=await fetch('/api/quotes',{cache:'no-store'}); latest=await res.json(); setRefreshTime(); if(!watchViewAnimating) renderWatch(); requestAnimationFrame(drawMiniCharts); }
 function renderAll(){ if(!isDashboardModule()) return; if(!(globalMarketEditMode&&globalMarketDragging)) renderGlobalMarket(); if(!(marketWindEditMode&&marketWindDragging)) renderWind(); if(!watchDragging&&!watchViewAnimating) renderWatch(); requestAnimationFrame(drawMiniCharts); }
 function renderCards(rows){ renderGlobalMarket(); }
@@ -166,6 +197,121 @@ function applyMarketWindSelection(symbol){ if(!marketWindEditMode||marketWindPic
 async function finishMarketWindEdit(){ if(!marketWindEditMode)return; const res=await fetch('/api/market-wind',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({slots:normalizeWindSlots(marketWindDraft)})}); if(!res.ok)throw new Error('HTTP '+res.status); closeMarketWindPicker(); marketWindDragging=false; marketWindEditMode=false; marketWindDraft=null; await refreshNow(); }
 function miniCanvas(q,extra=''){ return '<canvas class="mini-chart '+extra+'" data-mini-chart data-symbol="'+esc(q.symbol)+'" aria-hidden="true"></canvas>'; }
 function drawMiniCharts(){ const quotes=new Map([...optionMap(),...quoteMap()]); document.querySelectorAll('[data-mini-chart]').forEach(canvas=>{ const q=quotes.get(canvas.dataset.symbol), data=(q?.sparkline||[]).map(x=>Number(x.close)).filter(Number.isFinite), box=canvas.getBoundingClientRect(), dpr=window.devicePixelRatio||1, ctx=canvas.getContext('2d'); canvas.width=Math.max(1,Math.floor(box.width*dpr)); canvas.height=Math.max(1,Math.floor(box.height*dpr)); ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,box.width,box.height); if(data.length<2)return; const min=Math.min(...data), max=Math.max(...data), spread=Math.max(max-min,Math.abs(max)*.002,.01), lo=min-spread*.12, hi=max+spread*.12, x=i=>i/(data.length-1)*box.width, y=v=>8+(hi-v)/(hi-lo)*(box.height-16), up=(q?.change||0)>=0, color=getComputedStyle(document.body).getPropertyValue(up?'--red':'--green').trim(); const grad=ctx.createLinearGradient(0,0,0,box.height); grad.addColorStop(0,color+'40'); grad.addColorStop(1,color+'00'); ctx.beginPath(); data.forEach((v,i)=>i?ctx.lineTo(x(i),y(v)):ctx.moveTo(x(i),y(v))); ctx.lineTo(box.width,box.height-4); ctx.lineTo(0,box.height-4); ctx.closePath(); ctx.fillStyle=grad; ctx.fill(); ctx.beginPath(); data.forEach((v,i)=>i?ctx.lineTo(x(i),y(v)):ctx.moveTo(x(i),y(v))); ctx.strokeStyle=color; ctx.lineWidth=2; ctx.lineJoin='round'; ctx.lineCap='round'; ctx.shadowColor=color+'55'; ctx.shadowBlur=8; ctx.stroke(); }); }
+function formatCurrencyAmount(value){ return Number.isFinite(value)?Number(value).toLocaleString('zh-TW',{minimumFractionDigits:2,maximumFractionDigits:2}):'-'; }
+function renderCurrency(){
+  if(!currencyState) return;
+  currencyOptions=currencyOptionList();
+  renderCurrencySelects();
+  renderCurrencyFavorites();
+  renderCurrencyTable();
+  updateCurrencyResult();
+  requestAnimationFrame(drawMiniCharts);
+}
+function renderCurrencySelects(){
+  const options=(currencyOptions||[]).map(option=>'<option value="'+esc(option.code)+'">'+esc(currencyLabel(option))+'</option>').join('');
+  if(currencyFromSelect){ currencyFromSelect.innerHTML=options; currencyFromSelect.value=currencyState?.from||'USD'; }
+  if(currencyToSelect){ currencyToSelect.innerHTML=options; currencyToSelect.value=currencyState?.to||'TWD'; }
+  if(currencyAmountInput && !currencyAmountInput.value) currencyAmountInput.value='1000';
+}
+function renderCurrencyFavorites(){
+  if(!currencyFavoritesListEl) return;
+  const rows=(currencyState?.favorites||[]).filter(code=>code!=='TWD').map(code=>activeCurrencyQuote(code)).filter(Boolean);
+  currencyFavoritesListEl.innerHTML=rows.map(row=>'<button class="currency-favorite-chip '+((currencyState?.from===row.code||currencyState?.to===row.code)?'active':'')+'" type="button" data-currency-favorite="'+esc(row.code)+'"><span class="currency-flag">'+currencyFlag(row)+'</span><span class="currency-favorite-copy"><strong>'+esc(currencyLabel(row))+'</strong><span>點擊快速帶入</span></span></button>').join('');
+}
+function renderCurrencyTable(){
+  if(!currencyTableBodyEl) return;
+  const rows=(currencyState?.quotes||[]).filter(row=>row.code!=='TWD').map(row=>'<tr><td><div class="currency-row-main"><span class="currency-flag">'+currencyFlag(row)+'</span><div class="currency-row-copy"><strong>'+esc(currencyDisplayName(row))+'</strong><span>'+esc(currencyLabel(row))+'</span></div></div></td><td>'+esc(row.code||'-')+'</td><td>'+formatCurrencyAmount(row.rate)+'</td><td class="'+cls(row.change)+'">'+num(row.change)+'</td><td class="'+cls(row.changePercent)+'">'+pct(row.changePercent)+'</td><td>'+((row.sparkline||[]).length>1?miniCanvas({symbol:row.symbol||row.code,change:row.change,sparkline:row.sparkline},'table-mini-chart'):'<span class="muted">-</span>')+'</td><td><button class="currency-star-btn '+((currencyState?.favorites||[]).includes(row.code)?'active':'')+'" type="button" data-currency-toggle-favorite="'+esc(row.code)+'" aria-label="切換常用貨幣"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.9l2.8 5.68 6.27.91-4.53 4.42 1.07 6.24L12 17.2 6.38 20.15l1.07-6.24L2.92 9.49l6.27-.91L12 2.9z"/></svg></button></td></tr>').join('');
+  currencyTableBodyEl.innerHTML=rows;
+}
+function updateCurrencyResult(){
+  if(!currencyState) return;
+  currencyState.from=currencyFromSelect?.value||currencyState.from||'USD';
+  currencyState.to=currencyToSelect?.value||currencyState.to||'TWD';
+  const amount=Number(currencyAmountInput?.value||0), value=convertCurrencyAmount(amount,currencyState.from,currencyState.to), fromQuote=activeCurrencyQuote(currencyState.from), pairRate=convertCurrencyAmount(1,currencyState.from,currencyState.to), updatedAt=currencyUpdatedAt();
+  if(currencyResultValueEl) currencyResultValueEl.textContent=formatCurrencyAmount(value);
+  if(currencyRateTextEl) currencyRateTextEl.textContent='1 '+(currencyState.from||'-')+' = '+formatCurrencyAmount(pairRate)+' '+(currencyState.to||'-');
+  if(currencyChangeTextEl){ currencyChangeTextEl.textContent='TWD 基準: '+num(fromQuote?.change)+' ('+pct(fromQuote?.changePercent)+')'; currencyChangeTextEl.className=''; currencyChangeTextEl.classList.add(cls(fromQuote?.change)); }
+  if(currencyUpdatedTimeEl) currencyUpdatedTimeEl.textContent=fmtTime(updatedAt);
+}
+async function persistCurrencyState(snapshot){
+  if(!currencyState) return;
+  const payload=snapshot||{favorites:[...(currencyState.favorites||[])],from:currencyState.from,to:currencyState.to};
+  const revision=++currencyPersistRevision;
+  currencyLocalSnapshot={...payload,favorites:[...(payload.favorites||[])]};
+  currencyPersistPromise=currencyPersistPromise.catch(()=>{}).then(async()=>{
+    if(revision!==currencyPersistRevision) return;
+    const response=await fetch('/api/currency',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(payload)});
+    if(!response.ok) throw new Error('HTTP '+response.status);
+    if(revision===currencyPersistRevision) currencyLocalSnapshot=null;
+  });
+  return currencyPersistPromise;
+}
+async function setCurrencyPair(from,to,{persist=true}={}){
+  if(!currencyState) return;
+  currencyState.from=from;
+  currencyState.to=to;
+  updateCurrencyResult();
+  renderCurrencyFavorites();
+  if(persist) await persistCurrencyState({favorites:[...(currencyState.favorites||[])],from,to});
+}
+function currencyFavoritePair(code){
+  const currentFrom=currencyState?.from||'USD';
+  const currentTo=currencyState?.to||'TWD';
+  if(code===currentFrom) return { from:currentFrom, to:currentTo };
+  if(code===currentTo) return { from:code, to:currentFrom===code?'TWD':currentFrom };
+  return { from:code, to:currentTo===code?currentFrom:currentTo };
+}
+async function toggleCurrencyFavorite(code){
+  if(!currencyState) return;
+  if(code==='TWD') return;
+  const next=[...(currencyState.favorites||[])];
+  const index=next.indexOf(code);
+  if(index>=0) next.splice(index,1);
+  else {
+    if(next.length>=CURRENCY_FAVORITES_LIMIT) next.shift();
+    next.push(code);
+  }
+  currencyState.favorites=next;
+  renderCurrencyFavorites();
+  renderCurrencyTable();
+  await persistCurrencyState({favorites:[...next],from:currencyState.from,to:currencyState.to});
+}
+function openCurrencyPicker(mode){
+  currencyPickerMode=mode;
+  const rows=currencyOptionList().filter(row=>mode==='favorites'?row.code!=='TWD':true);
+  if(!rows.length) return;
+  const favorites=new Set(currencyState?.favorites||[]);
+  const title=mode==='favorites'?'管理常用貨幣':mode==='from'?'選擇來源幣別':'選擇目標幣別';
+  const body=rows.map(row=>'<button class="currency-option-button" type="button" data-currency-option="'+esc(row.code)+'"'+((mode!=='favorites'&&currencyState?.[mode]===row.code)?' data-selected="true"':'')+((favorites.has(row.code)&&mode==='favorites')?' data-active="true"':'')+'><span class="currency-row-main"><span class="currency-flag">'+currencyFlag(row)+'</span><span class="currency-row-copy"><strong>'+esc(currencyLabel(row))+'</strong><small>'+esc(row.code)+' 對 TWD '+formatCurrencyAmount(row.rate)+'</small></span></span><strong>'+(mode==='favorites'?(favorites.has(row.code)?'已加入':'加入'):'選擇')+'</strong></button>').join('');
+  marketModal.innerHTML='<div class="market-modal-head"><div><h2>'+title+'</h2><div class="market-modal-subtitle">'+(mode==='favorites'?'最多保留 '+CURRENCY_FAVORITES_LIMIT+' 個常用貨幣。':'切換後會立即更新換算結果。')+'</div></div><button class="small-btn" type="button" data-currency-close-picker>關閉</button></div><div class="currency-modal-grid">'+body+'</div>';
+  document.body.classList.add('market-picker-open');
+}
+function closeCurrencyPicker(){ currencyPickerMode=null; if(document.body.classList.contains('market-picker-open')&&marketWindPickerIndex===null&&globalMarketPickerIndex===null){ document.body.classList.remove('market-picker-open'); } if(currencyPickerMode===null&&marketWindPickerIndex===null&&globalMarketPickerIndex===null) marketModal.innerHTML=''; }
+async function handleCurrencyOptionPick(code){
+  if(!currencyState||!currencyPickerMode) return;
+  if(currencyPickerMode==='favorites'){ await toggleCurrencyFavorite(code); openCurrencyPicker('favorites'); return; }
+  currencyState[currencyPickerMode]=code;
+  if(currencyPickerMode==='from'&&currencyFromSelect) currencyFromSelect.value=code;
+  if(currencyPickerMode==='to'&&currencyToSelect) currencyToSelect.value=code;
+  updateCurrencyResult();
+  renderCurrencyFavorites();
+  await persistCurrencyState({favorites:[...(currencyState.favorites||[])],from:currencyState.from,to:currencyState.to});
+  closeCurrencyPicker();
+}
+async function refreshCurrencyOnly(){
+  if(currencyRefreshButton?.classList.contains('spinning')) return;
+  currencyRefreshButton?.classList.add('spinning');
+  try{
+    const [currencyRes, currencyOptionsRes] = await Promise.all([fetch('/api/currency',{cache:'no-store'}), fetch('/api/currency/options',{cache:'no-store'})]);
+    currencyState=applyCurrencyServerState(await currencyRes.json());
+    const optionsData=await currencyOptionsRes.json();
+    currencyOptions=optionsData?.options||currencyState?.quotes||[];
+    if(activeModule==='currency') renderCurrency();
+  } finally {
+    setTimeout(()=>currencyRefreshButton?.classList.remove('spinning'),650);
+  }
+}
+
 function watchlists(){
   if(Array.isArray(latest?.watchlists)&&latest.watchlists.length)return latest.watchlists;
   const legacy=(latest?.groups||[]).find(group=>group.name==='自選股');
@@ -284,7 +430,7 @@ function rankNote(key,market){ if(key!=='gainers'&&key!=='losers')return ''; con
 function rankList(rows,mode){ return '<div class="rank-list">'+(rows.length?rows.map((q,i)=>{ const mid=mode==='volume'?fmtInt(q.volume):num(q.change), tail=pct(q.changePercent); return '<div class="rank-row" data-open="'+esc(q.symbol)+'" data-name="'+esc(q.name)+'" data-type="'+esc(q.type)+'"><span class="rank-no">'+(i+1)+'</span><span class="rank-name"><strong>'+esc(q.name)+'</strong><em>'+esc(q.symbol.replace(/^\^/,''))+'</em></span><span class="rank-price">'+fmtNumber(q.price,2)+'</span><span class="'+(mode==='volume'?'':cls(q.change))+'">'+mid+'</span><span class="'+cls(q.changePercent)+'">'+tail+'</span></div>'; }).join(''):'<div class="rank-empty">目前沒有符合條件的標的</div>')+'</div>'; }
 function openRankModal(key){ const market=rankMarkets[key]||'tw', title=key==='global'?'國際大盤指數漲幅排行':(key==='gainers'?'熱門股漲幅':key==='losers'?'熱門股跌幅':'成交量排行')+(key==='global'?'':' · '+(market==='tw'?'台股':'美股')), rows=key==='global'?(rankings?.global||[]):rankings?.markets?.[market]?.[key]||[]; rankModal.innerHTML='<div class="rank-modal-head"><h2>'+title+'</h2><button class="small-btn" data-close-rank>關閉</button></div>'+rankNote(key,market)+rankList(rows.slice(0,20),key); document.body.classList.add('rank-open'); }
 function closeRankModal(){ document.body.classList.remove('rank-open'); rankModal.innerHTML=''; }
-async function refreshNow(){ if(refreshButton.classList.contains('spinning'))return; refreshButton.classList.add('spinning'); try{ const [quoteRes,rankRes,marketRes,windRes]=await Promise.all([fetch('/api/quotes',{cache:'no-store'}),fetch('/api/rankings',{cache:'no-store'}),fetch('/api/global-market',{cache:'no-store'}),fetch('/api/market-wind',{cache:'no-store'})]); latest=await quoteRes.json(); rankings=await rankRes.json(); globalMarketState=await marketRes.json(); marketWindState=await windRes.json(); setRefreshTime(); renderAll(); await refreshDetail().catch(()=>{}); } finally{ setTimeout(()=>refreshButton.classList.remove('spinning'),800); } }
+async function refreshNow(){ if(refreshButton.classList.contains('spinning'))return; refreshButton.classList.add('spinning'); try{ const [quoteRes,rankRes,marketRes,windRes]=await Promise.all([fetch('/api/quotes',{cache:'no-store'}),fetch('/api/rankings',{cache:'no-store'}),fetch('/api/global-market',{cache:'no-store'}),fetch('/api/market-wind',{cache:'no-store'})]); latest=await quoteRes.json(); rankings=await rankRes.json(); globalMarketState=await marketRes.json(); marketWindState=await windRes.json(); setRefreshTime(); renderAll(); if(activeModule==='currency') renderCurrency(); await refreshDetail().catch(()=>{}); } finally{ setTimeout(()=>refreshButton.classList.remove('spinning'),800); } }
 function table(headers, rows, draggable=false){ return '<table><thead><tr>'+headers.map(h=>'<th>'+h+'</th>').join('')+'</tr></thead><tbody>'+rows.map(r=>{ const q=r[r.length-1]; return '<tr '+(draggable?'draggable="true" data-watch-row ':'')+'data-open="'+esc(q.symbol)+'" data-name="'+esc(q.name)+'" data-type="'+esc(q.type)+'">'+r.slice(0,-1).map((c,i)=>'<td class="'+(String(c).includes('▲')?'up':String(c).includes('▼')?'down':String(c).includes('+')?'up':String(c).includes('-')?'down':'')+'">'+c+'</td>').join('')+'</tr>'; }).join('')+'</tbody></table>'; }
 function num(v){ return Number.isFinite(v)?(v>0?'+':'')+fmtNumber(v,2):'-'; } function pct(v){ return Number.isFinite(v)?(v>0?'▲ ':v<0?'▼ ':'')+fmtNumber(Math.abs(v),2)+'%':'-'; } function money(v){ return Number.isFinite(v)?(v>0?'+':'')+fmtNumber(v,2):'-'; }
 async function search(){ const q=searchEl.value.trim(); if(!q){suggestEl.innerHTML='';return;} suggestEl.innerHTML='<div class="pick muted">搜尋中...</div>'; const res=await fetch('/api/search?market='+encodeURIComponent(marketEl.value)+'&q='+encodeURIComponent(q),{cache:'no-store'}); const items=await res.json(); suggestEl.innerHTML=items.map(x=>{const inW=isInAnyWatchlist(x.symbol);return '<div class="pick" data-open="'+esc(x.symbol)+'" data-name="'+esc(x.name)+'" data-type="'+esc(x.type)+'"><div><strong>'+esc(x.symbol)+'</strong> <span>'+esc(x.type)+' '+esc(x.name)+'</span></div><button class="'+(inW?'small-btn':'')+'" data-watch-pick="'+esc(x.symbol)+'" data-name="'+esc(x.name)+'" data-type="'+esc(x.type)+'">'+(inW?'管理自選':'加入自選')+'</button></div>';}).join('')||'<div class="pick muted">沒有結果</div>'; }
@@ -355,7 +501,7 @@ function animateDetail(from, to) {
   ], { duration: 380, easing: 'cubic-bezier(.16,1,.3,1)' });
 }
 function closeDetail(){ if(!document.body.classList.contains('detail-open'))return; detailEl.animate([{opacity:1,transform:'scale(1)'},{opacity:0,transform:'scale(.96)'}],{duration:140,easing:'ease-out'}).finished.finally(()=>{document.body.classList.remove('detail-open'); detailData=null; detailFetchedAt=null; detailWatchAllowed=true; detailEl.innerHTML='';}); }
-function setTheme(theme){ document.body.classList.toggle('light',theme==='light'); themeButton.title=theme==='light'?'切換到暗色主題':'切換到白色主題'; localStorage.setItem('theme',theme); requestAnimationFrame(()=>{drawMiniCharts(); if(detailData)drawChart();}); }
+function setTheme(theme){ document.body.classList.toggle('light',theme==='light'); themeButtons.forEach(button=>{ button.title=theme==='light'?'切換到暗色主題':'切換到白色主題'; button.setAttribute('aria-label', button.title); }); localStorage.setItem('theme',theme); requestAnimationFrame(()=>{drawMiniCharts(); if(detailData)drawChart();}); }
 function animateRows(tbody, before){ [...tbody.children].forEach(row=>{ const old=before.get(row), now=row.getBoundingClientRect(); if(!old)return; const dy=old.top-now.top; if(dy) row.animate([{transform:'translateY('+dy+'px)'},{transform:'translateY(0)'}],{duration:150,easing:'ease-out'}); }); }
 async function saveWatchOrder(){ const symbols=[...watchPanel.querySelectorAll('[data-watch-row], [data-watch-card]')].map(row=>row.dataset.open).filter(Boolean); await post('/api/watchlists/'+encodeURIComponent(activeWatchlist().id)+'/reorder',{symbols}); await load(); }
 function getWatchDragTarget(e){ return watchViewMode==='cards'?e.target.closest('[data-watch-card]'):e.target.closest('[data-watch-row]'); }
@@ -394,6 +540,15 @@ document.body.addEventListener('click',async e=>{
   if(e.target.closest('[data-profile-open]')){ openProfileSettings(); return; }
   if(e.target===profileLayer||e.target.closest('[data-close-profile]')){ closeProfileSettings(); return; }
   if(e.target.closest('[data-profile-reset-avatar]')){ profileDraftAvatar=''; updateProfileAvatarPreview(); return; }
+  const currencyAdd=e.target.closest('[data-currency-add]');
+  if(currencyAdd){ const current=Number(currencyAmountInput?.value||0); if(currencyAmountInput) currencyAmountInput.value=String((Number.isFinite(current)?current:0)+Number(currencyAdd.dataset.currencyAdd||0)); updateCurrencyResult(); return; }
+  if(e.target.closest('[data-currency-clear]')){ if(currencyAmountInput) currencyAmountInput.value=''; updateCurrencyResult(); return; }
+  if(e.target.closest('#currencySwapButton')){ if(currencyState){ const nextFrom=currencyToSelect?.value||currencyState.to; const nextTo=currencyFromSelect?.value||currencyState.from; if(currencyFromSelect) currencyFromSelect.value=nextFrom; if(currencyToSelect) currencyToSelect.value=nextTo; await setCurrencyPair(nextFrom,nextTo); } return; }
+  const currencyFavorite=e.target.closest('[data-currency-favorite]');
+  if(currencyFavorite){ const now=Date.now(); if(now<currencyFavoriteThrottleUntil) return; currencyFavoriteThrottleUntil=now+120; const code=currencyFavorite.dataset.currencyFavorite; if(currencyState){ const pair=currencyFavoritePair(code); if(currencyFromSelect) currencyFromSelect.value=pair.from; if(currencyToSelect) currencyToSelect.value=pair.to; await setCurrencyPair(pair.from,pair.to); } return; }
+  if(e.target.closest('[data-currency-manage-favorites]')){ openCurrencyPicker('favorites'); return; }
+  const currencyToggle=e.target.closest('[data-currency-toggle-favorite]');
+  if(currencyToggle){ await toggleCurrencyFavorite(currencyToggle.dataset.currencyToggleFavorite); return; }
   const moduleTrigger=e.target.closest('[data-module]');
   if(moduleTrigger){
     e.preventDefault();
@@ -435,10 +590,17 @@ document.body.addEventListener('click',async e=>{
   const open=e.target.closest('[data-open]');
   if(open){ if(open.closest('#rankLayer'))closeRankModal(); openDetail(open.dataset.open,open.dataset.name,open.dataset.type,open); }
 });
-document.body.addEventListener('submit',async e=>{ const profileForm=e.target.closest('[data-profile-form]'); if(profileForm){ e.preventDefault(); submitProfileForm(profileForm); return; } const form=e.target.closest('[data-watchlist-form]'); if(!form)return; e.preventDefault(); await submitWatchlistNameForm(form); });
+document.body.addEventListener('submit',async e=>{ const profileForm=e.target.closest('[data-profile-form]'); if(profileForm){ e.preventDefault(); await submitProfileForm(profileForm); return; } const form=e.target.closest('[data-watchlist-form]'); if(!form)return; e.preventDefault(); await submitWatchlistNameForm(form); });
 document.body.addEventListener('change',async e=>{ const profileAvatarInput=e.target.closest('[data-profile-avatar-input]'); if(profileAvatarInput){ try{ await handleProfileAvatarChange(profileAvatarInput); }catch(error){ console.error(error); } return; } const membership=e.target.closest('[data-watchlist-membership]'); if(membership){await toggleWatchlistMembership(membership.dataset.watchlistMembership,membership.checked); return;} const select=e.target.closest('[data-rank-market]'); if(!select)return; rankMarkets[select.dataset.rankMarket]=select.value; renderRankings(); });
+
+currencyRefreshButton?.addEventListener('click', async()=>{ try{ await refreshCurrencyOnly(); }catch(error){ console.error(error); } });
+currencyAmountInput?.addEventListener('input',()=>updateCurrencyResult());
+currencyFromSelect?.addEventListener('change',async()=>{ if(!currencyState) return; await setCurrencyPair(currencyFromSelect.value,currencyToSelect.value); });
+currencyToSelect?.addEventListener('change',async()=>{ if(!currencyState) return; await setCurrencyPair(currencyFromSelect.value,currencyToSelect.value); });
+marketModal.addEventListener('click',async e=>{ const currencyOption=e.target.closest('[data-currency-option]'); if(currencyOption){ e.stopPropagation(); await handleCurrencyOptionPick(currencyOption.dataset.currencyOption); return; } if(e.target===marketLayer||e.target.closest('[data-currency-close-picker]')){ if(currencyPickerMode){ e.stopPropagation(); closeCurrencyPicker(); } } });
+
 refreshButton.addEventListener('click', refreshNow);
-themeButton.addEventListener('click',()=>setTheme(document.body.classList.contains('light')?'dark':'light'));
+themeButtons.forEach(button=>button.addEventListener('click',()=>setTheme(document.body.classList.contains('light')?'dark':'light')));
 sidebarToggle?.addEventListener('click', toggleSidebar);
 sidebarResizeHandle?.addEventListener('pointerdown', beginSidebarResize);
 window.addEventListener('pointermove', updateSidebarResize);
@@ -448,7 +610,7 @@ searchEl.addEventListener('input',()=>{clearTimeout(searchTimer);searchTimer=set
 searchEl.addEventListener('focus',()=>{if(searchEl.value.trim())search();});
 marketEl.addEventListener('change',search);
 document.addEventListener('click',e=>{if(!e.target.closest('.search'))suggestEl.innerHTML='';},true);
-window.addEventListener('keydown',e=>{if(e.key==='Escape'){if(document.body.classList.contains('profile-open')){closeProfileSettings();return;} if(document.body.classList.contains('watchlist-picker-open')){closeWatchlistPicker();return;} if(marketWindPickerIndex!==null){closeMarketWindPicker();return;} if(globalMarketPickerIndex!==null){closeGlobalMarketPicker();return;} if(marketWindEditMode){cancelMarketWindEdit();return;} if(globalMarketEditMode){cancelGlobalMarketEdit();return;} closeDetail();closeRankModal();}});
+window.addEventListener('keydown',e=>{if(e.key==='Escape'){if(document.body.classList.contains('profile-open')){closeProfileSettings();return;} if(document.body.classList.contains('watchlist-picker-open')){closeWatchlistPicker();return;} if(currencyPickerMode){closeCurrencyPicker();return;} if(marketWindPickerIndex!==null){closeMarketWindPicker();return;} if(globalMarketPickerIndex!==null){closeGlobalMarketPicker();return;} if(marketWindEditMode){cancelMarketWindEdit();return;} if(globalMarketEditMode){cancelGlobalMarketEdit();return;} closeDetail();closeRankModal();}});
 window.addEventListener('resize',()=>{
   if(isMobileSidebar() && sidebarResizeState){
     sidebarResizeState=null;
@@ -456,7 +618,8 @@ window.addEventListener('resize',()=>{
   }
   applySidebarState();
   if(detailData)drawChart();
-  if(isDashboardModule()) requestAnimationFrame(drawMiniCharts);
+  requestAnimationFrame(drawMiniCharts);
+  if(activeModule==='currency') renderCurrency();
 });
 applySidebarState();
 renderModuleState();
