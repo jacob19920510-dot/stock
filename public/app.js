@@ -1,10 +1,14 @@
-const cardsEl = document.querySelector('#cards'), windCardsEl = document.querySelector('#windCards'), watchPanel = document.querySelector('#watchPanel'), rankPanel = document.querySelector('#rankPanel'), rankLayer = document.querySelector('#rankLayer'), rankModal = document.querySelector('#rankModal'), detailLayer = document.querySelector('#detailLayer'), detailEl = document.querySelector('#detail'), marketLayer = document.querySelector('#marketLayer'), marketModal = document.querySelector('#marketModal'), watchlistLayer = document.querySelector('#watchlistLayer'), watchlistModal = document.querySelector('#watchlistModal'), globalMarketEditBtn = document.querySelector('#globalMarketEditBtn'), globalMarketDoneBtn = document.querySelector('#globalMarketDoneBtn'), globalMarketCancelBtn = document.querySelector('#globalMarketCancelBtn'), marketWindEditBtn = document.querySelector('#marketWindEditBtn'), marketWindDoneBtn = document.querySelector('#marketWindDoneBtn'), marketWindCancelBtn = document.querySelector('#marketWindCancelBtn'), suggestEl = document.querySelector('#suggest'), searchEl = document.querySelector('#search'), marketEl = document.querySelector('#market'), refreshButton = document.querySelector('#refreshButton'), themeButton = document.querySelector('#themeButton'), refreshTimeEl = document.querySelector('#refreshTime');
-let detailData=null, detailFetchedAt=null, detailWatchAllowed=true, chartMode='k', kPeriod='d', chartState=null, latest=null, rankings=null, globalMarketState=null, globalMarketDraft=null, globalMarketEditMode=false, globalMarketDragging=false, marketWindState=null, marketWindDraft=null, marketWindEditMode=false, marketWindDragging=false, marketWindPickerIndex=null, marketWindOptions=null, marketWindOptionsPromise=null, watchDragging=false, watchTabsDrag=null, watchTabsClickSuppressed=false, watchlistSortDrag=null, watchViewAnimating=false, watchViewMode=localStorage.getItem('watchViewMode')==='cards'?'cards':'table', activeWatchlistId=localStorage.getItem('activeWatchlistId')||'', watchlistPickerQuote=null, watchlistDialog=null, globalMarketPickerIndex=null, globalMarketOptions=null, globalMarketOptionsPromise=null, rankMarkets={gainers:'tw',losers:'tw',volume:'tw'}, activeRankTab='gainers', searchTimer=null, loadTimer=null;
+const cardsEl = document.querySelector('#cards'), windCardsEl = document.querySelector('#windCards'), watchPanel = document.querySelector('#watchPanel'), rankPanel = document.querySelector('#rankPanel'), rankLayer = document.querySelector('#rankLayer'), rankModal = document.querySelector('#rankModal'), detailLayer = document.querySelector('#detailLayer'), detailEl = document.querySelector('#detail'), marketLayer = document.querySelector('#marketLayer'), marketModal = document.querySelector('#marketModal'), watchlistLayer = document.querySelector('#watchlistLayer'), watchlistModal = document.querySelector('#watchlistModal'), profileLayer = document.querySelector('#profileLayer'), profileModal = document.querySelector('#profileModal'), profileButton = document.querySelector('#profileButton'), sideUserAvatarEl = document.querySelector('#sideUserAvatar'), sideUserNameEl = document.querySelector('#sideUserName'), globalMarketEditBtn = document.querySelector('#globalMarketEditBtn'), globalMarketDoneBtn = document.querySelector('#globalMarketDoneBtn'), globalMarketCancelBtn = document.querySelector('#globalMarketCancelBtn'), marketWindEditBtn = document.querySelector('#marketWindEditBtn'), marketWindDoneBtn = document.querySelector('#marketWindDoneBtn'), marketWindCancelBtn = document.querySelector('#marketWindCancelBtn'), suggestEl = document.querySelector('#suggest'), searchEl = document.querySelector('#search'), marketEl = document.querySelector('#market'), refreshButton = document.querySelector('#refreshButton'), themeButton = document.querySelector('#themeButton'), refreshTimeEl = document.querySelector('#refreshTime'), sidebarEl = document.querySelector('#sidebar'), sidebarToggle = document.querySelector('#sidebarToggle'), sidebarResizeHandle = document.querySelector('#sidebarResizeHandle'), moduleViews = [...document.querySelectorAll('[data-module-view]')], moduleButtons = [...document.querySelectorAll('[data-module]')];
+let detailData=null, detailFetchedAt=null, detailWatchAllowed=true, chartMode='k', kPeriod='d', chartState=null, latest=null, rankings=null, globalMarketState=null, globalMarketDraft=null, globalMarketEditMode=false, globalMarketDragging=false, marketWindState=null, marketWindDraft=null, marketWindEditMode=false, marketWindDragging=false, marketWindPickerIndex=null, marketWindOptions=null, marketWindOptionsPromise=null, watchDragging=false, watchTabsDrag=null, watchTabsClickSuppressed=false, watchlistSortDrag=null, watchViewAnimating=false, watchViewMode=localStorage.getItem('watchViewMode')==='cards'?'cards':'table', activeWatchlistId=localStorage.getItem('activeWatchlistId')||'', watchlistPickerQuote=null, watchlistDialog=null, profileDraftAvatar='', globalMarketPickerIndex=null, globalMarketOptions=null, globalMarketOptionsPromise=null, rankMarkets={gainers:'tw',losers:'tw',volume:'tw'}, activeRankTab='gainers', searchTimer=null, loadTimer=null, activeModule=localStorage.getItem('activeModule')||'dashboard', sidebarCollapsed=localStorage.getItem('sidebarCollapsed')==='true', sidebarWidth=Number(localStorage.getItem('sidebarWidth'))||276, sidebarResizeState=null, moduleTransitionTimer=null;
+const SIDEBAR_MIN_WIDTH=220, SIDEBAR_MAX_WIDTH=380, SIDEBAR_COLLAPSED_WIDTH=96, SIDEBAR_MOBILE_BREAKPOINT=900;
+const DEFAULT_PROFILE={ name:'投資者', avatar:'' };
+let profileState=loadProfile();
 const fmtNumber=(v,d=2)=>Number.isFinite(v)?v.toLocaleString('zh-TW',{maximumFractionDigits:d}):'-';
 const fmtInt=v=>Number.isFinite(v)?Math.round(v).toLocaleString('zh-TW'):'-';
 const fmtTime=v=>v?new Date(v).toLocaleString('zh-TW',{hour12:false}):'-';
 const cls=v=>v>0?'up':v<0?'down':'';
 const esc=v=>String(v??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+const profileAvatarMarkup=avatar=>avatar?'<img src="'+avatar+'" alt="使用者頭像">':'<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" fill="currentColor" opacity=".95"/><path d="M5 19c1.8-3.1 4.2-4.6 7-4.6S17.2 15.9 19 19" fill="currentColor" opacity=".45"/></svg>';
 const canWatch=q=>q?.type==='台股'||q?.type==='美股';
 const globalMarketOptionLabel=o=>o?.region?o.region+' · '+o.name:o?.name||'-';
 const sectionTitleIcon=kind=>kind==='watch'?'<span class="section-title-icon section-title-icon-watch" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.9l2.8 5.68 6.27.91-4.53 4.42 1.07 6.24L12 17.2 6.38 20.15l1.07-6.24L2.92 9.49l6.27-.91L12 2.9z"/></svg></span>':'';
@@ -19,10 +23,97 @@ function currentWindSlots(){ return normalizeWindSlots(marketWindEditMode&&Array
 function resolveMarketRow(slot, quotes, options){ if(!slot?.symbol)return null; return quotes.get(slot.symbol) || options.get(slot.symbol) || slot; }
 function isMarketSlotUsed(symbol, index, slots){ return symbol && slots.some((slot,i)=>i!==index&&slot?.symbol===symbol); }
 function flatGroups(data){ return Object.fromEntries(data.groups.map(g=>[g.name,g.quotes])); }
+function loadProfile(){ try{ const raw=JSON.parse(localStorage.getItem('profileSettings')||'{}'); return { ...DEFAULT_PROFILE, ...(raw&&typeof raw==='object'?raw:{}) }; }catch{ return { ...DEFAULT_PROFILE }; } }
+function saveProfile(){ localStorage.setItem('profileSettings', JSON.stringify(profileState)); renderProfileCard(); }
+function renderProfileCard(){ if(sideUserNameEl) sideUserNameEl.textContent=profileState.name||DEFAULT_PROFILE.name; if(sideUserAvatarEl) sideUserAvatarEl.innerHTML=profileAvatarMarkup(profileState.avatar); }
 function setRefreshTime(){ const t=fmtTime(latest?.fetchedAt); document.querySelector('#sideTime').textContent=t; refreshTimeEl.textContent=t; }
+function isDashboardModule(){ return activeModule==='dashboard'; }
+function isMobileSidebar(){ return window.innerWidth<=SIDEBAR_MOBILE_BREAKPOINT; }
+function clampSidebarWidth(width){ return Math.min(SIDEBAR_MAX_WIDTH, Math.max(SIDEBAR_MIN_WIDTH, Math.round(width||SIDEBAR_MIN_WIDTH))); }
+function persistSidebarState(){ localStorage.setItem('sidebarCollapsed', String(sidebarCollapsed)); localStorage.setItem('sidebarWidth', String(sidebarWidth)); }
+function applySidebarState(){
+  if(!sidebarEl) return;
+  document.body.classList.toggle('sidebar-collapsed', sidebarCollapsed);
+  const appliedWidth=sidebarCollapsed?SIDEBAR_COLLAPSED_WIDTH:clampSidebarWidth(sidebarWidth);
+  document.body.style.setProperty('--sidebar-width', appliedWidth+'px');
+  persistSidebarState();
+}
+function renderModuleState(){
+  document.body.dataset.activeModule=activeModule;
+  moduleViews.forEach(view=>{
+    const active=view.dataset.moduleView===activeModule;
+    view.classList.toggle('is-active', active);
+    view.classList.toggle('is-leaving', false);
+  });
+  moduleButtons.forEach(button=>{
+    const active=button.dataset.module===activeModule;
+    button.classList.toggle('active', active);
+    if(active) button.setAttribute('aria-current', 'page');
+    else button.removeAttribute('aria-current');
+  });
+}
+function setActiveModule(nextModule){
+  const previousModule=activeModule;
+  if((nextModule||'dashboard')===previousModule) return;
+  clearTimeout(moduleTransitionTimer);
+  const previousView=moduleViews.find(view=>view.dataset.moduleView===previousModule);
+  activeModule=nextModule||'dashboard';
+  localStorage.setItem('activeModule', activeModule);
+  if(previousView){
+    previousView.classList.add('is-leaving');
+    previousView.classList.remove('is-active');
+  }
+  renderModuleState();
+  moduleTransitionTimer=setTimeout(()=>{
+    previousView?.classList.remove('is-leaving');
+    moduleTransitionTimer=null;
+  }, 260);
+  if(activeModule==='dashboard') renderAll();
+}
+function toggleSidebar(){ sidebarCollapsed=!sidebarCollapsed; applySidebarState(); }
+function beginSidebarResize(event){
+  if(isMobileSidebar()||sidebarCollapsed) return;
+  sidebarResizeState={ pointerId:event.pointerId, startX:event.clientX, startWidth:sidebarEl.getBoundingClientRect().width };
+  document.body.classList.add('sidebar-resizing');
+  sidebarResizeHandle.setPointerCapture?.(event.pointerId);
+  event.preventDefault();
+}
+function updateSidebarResize(event){
+  if(!sidebarResizeState||event.pointerId!==sidebarResizeState.pointerId) return;
+  sidebarWidth=clampSidebarWidth(sidebarResizeState.startWidth+(event.clientX-sidebarResizeState.startX));
+  document.body.style.setProperty('--sidebar-width', sidebarWidth+'px');
+}
+function endSidebarResize(event){
+  if(!sidebarResizeState) return;
+  if(event?.pointerId!==undefined&&event.pointerId!==sidebarResizeState.pointerId) return;
+  sidebarResizeState=null;
+  document.body.classList.remove('sidebar-resizing');
+  applySidebarState();
+}
+function closeProfileSettings(){ document.body.classList.remove('profile-open'); profileModal.innerHTML=''; profileDraftAvatar=''; }
+function openProfileSettings(){
+  profileDraftAvatar=profileState.avatar||'';
+  profileModal.innerHTML='<form class="profile-form" data-profile-form><div class="profile-modal-head"><div><h2>個人設定</h2><div class="market-modal-subtitle">更新你的顯示名稱與個人頭像。</div></div><button class="small-btn" type="button" data-close-profile>關閉</button></div><div class="profile-avatar-row"><div class="profile-avatar-preview" data-profile-avatar-preview>'+profileAvatarMarkup(profileDraftAvatar)+'</div><div class="profile-avatar-actions"><label class="profile-upload-label">上傳頭像<input type="file" accept="image/*" data-profile-avatar-input></label><button class="small-btn" type="button" data-profile-reset-avatar>移除頭像</button><div class="profile-helper">支援常見圖片格式，資料會保存在這台瀏覽器。</div></div></div><label class="watchlist-field"><span>顯示名稱</span><input class="watchlist-input" name="name" maxlength="24" autocomplete="off" placeholder="輸入你的名字" value="'+esc(profileState.name||DEFAULT_PROFILE.name)+'"></label><div class="watchlist-modal-actions"><button class="small-btn" type="button" data-close-profile>取消</button><button class="small-btn primary" type="submit">儲存設定</button></div></form>';
+  document.body.classList.add('profile-open');
+  requestAnimationFrame(()=>profileModal.querySelector('input[name="name"]')?.focus());
+}
+function updateProfileAvatarPreview(){ const preview=profileModal.querySelector('[data-profile-avatar-preview]'); if(preview) preview.innerHTML=profileAvatarMarkup(profileDraftAvatar); }
+async function handleProfileAvatarChange(input){
+  const file=input?.files?.[0];
+  if(!file) return;
+  profileDraftAvatar=await new Promise((resolve,reject)=>{ const reader=new FileReader(); reader.onload=()=>resolve(String(reader.result||'')); reader.onerror=()=>reject(reader.error); reader.readAsDataURL(file); });
+  updateProfileAvatarPreview();
+}
+function submitProfileForm(form){
+  const name=(new FormData(form).get('name')||'').toString().trim();
+  profileState.name=name||DEFAULT_PROFILE.name;
+  profileState.avatar=profileDraftAvatar||'';
+  saveProfile();
+  closeProfileSettings();
+}
 async function load(){ const [quoteRes,rankRes,marketRes,windRes]=await Promise.all([fetch('/api/quotes',{cache:'no-store'}),fetch('/api/rankings',{cache:'no-store'}),fetch('/api/global-market',{cache:'no-store'}),fetch('/api/market-wind',{cache:'no-store'})]); latest=await quoteRes.json(); rankings=await rankRes.json(); globalMarketState=await marketRes.json(); marketWindState=await windRes.json(); setRefreshTime(); renderAll(); await refreshDetail().catch(()=>{}); clearTimeout(loadTimer); loadTimer=setTimeout(load,(latest.refreshSeconds||5)*1000); }
 async function reloadWatch(){ const res=await fetch('/api/quotes',{cache:'no-store'}); latest=await res.json(); setRefreshTime(); if(!watchViewAnimating) renderWatch(); requestAnimationFrame(drawMiniCharts); }
-function renderAll(){ if(!(globalMarketEditMode&&globalMarketDragging)) renderGlobalMarket(); if(!(marketWindEditMode&&marketWindDragging)) renderWind(); if(!watchDragging&&!watchViewAnimating) renderWatch(); requestAnimationFrame(drawMiniCharts); }
+function renderAll(){ if(!isDashboardModule()) return; if(!(globalMarketEditMode&&globalMarketDragging)) renderGlobalMarket(); if(!(marketWindEditMode&&marketWindDragging)) renderWind(); if(!watchDragging&&!watchViewAnimating) renderWatch(); requestAnimationFrame(drawMiniCharts); }
 function renderCards(rows){ renderGlobalMarket(); }
 function updateGlobalMarketControls(){ const editing=globalMarketEditMode; globalMarketEditBtn.hidden=editing; globalMarketDoneBtn.hidden=!editing; globalMarketCancelBtn.hidden=!editing; document.body.classList.toggle('global-market-edit',editing); }
 function renderGlobalMarket(){ const quotes=quoteMap(), options=optionMap(), slots=currentMarketSlots(); cardsEl.innerHTML=slots.map((slot,i)=>renderMarketCard(slot,i,quotes,options)).join(''); updateGlobalMarketControls(); }
@@ -60,7 +151,7 @@ async function finishGlobalMarketEdit(){ if(!globalMarketEditMode)return; const 
 function updateMarketWindControls(){ const editing=marketWindEditMode; marketWindEditBtn.hidden=editing; marketWindDoneBtn.hidden=!editing; marketWindCancelBtn.hidden=!editing; document.body.classList.toggle('market-wind-edit',editing); }
 function windOptionMap(){ return new Map((marketWindOptions||[]).flatMap(group=>(group.options||[]).map(option=>[option.symbol,{...option,group:option.group||group.name}]))); }
 function renderWind(){ const options=windOptionMap(), slots=currentWindSlots(); windCardsEl.innerHTML=slots.map((slot,index)=>renderWindCard(slot,index,options)).join(''); updateMarketWindControls(); }
-function renderWindCard(slot,index,options){ const row=resolveMarketRow(slot,new Map((marketWindState?.slots||[]).filter(Boolean).map(q=>[q.symbol,q])),options); const editing=marketWindEditMode; if(!row){ return '<div class="wind-card wind-slot empty" draggable="'+(editing?'true':'false')+'" data-wind-slot="'+index+'" data-wind-symbol=""><div class="market-slot-placeholder"><strong>點擊新增指標</strong><span>可替換市場風向項目</span></div></div>'; } const title=esc(row.name||row.symbol), symbol=esc(row.symbol), type=esc(row.type||'市場風向'), name=esc(row.name||row.symbol), change=Number.isFinite(row.change)?row.change:null, changePercent=Number.isFinite(row.changePercent)?row.changePercent:null, price=Number.isFinite(row.price)?fmtNumber(row.price,2):'-', group=row.group?esc(row.group+' · '+row.symbol):esc(row.symbol); return '<div class="wind-card wind-slot has-mini-chart" draggable="'+(editing?'true':'false')+'" data-open="'+symbol+'" data-name="'+name+'" data-type="'+type+'" data-wind-slot="'+index+'" data-wind-symbol="'+symbol+'" data-wind-name="'+name+'" data-wind-type="'+type+'">'+(editing?'<div class="market-slot-actions"><button class="small-btn danger market-wind-slot-remove" type="button" data-wind-remove="'+index+'">移除</button></div>':'')+'<div class="card-copy"><div class="wind-title">'+title+'</div><div class="wind-price">'+price+'</div><div class="wind-change '+cls(change)+'">'+num(change)+' ('+pct(changePercent)+')</div></div>'+miniCanvas(row)+'<div class="wind-slot-note muted">'+group+'</div></div>'; }
+function renderWindCard(slot,index,options){ const row=resolveMarketRow(slot,new Map((marketWindState?.slots||[]).filter(Boolean).map(q=>[q.symbol,q])),options); const editing=marketWindEditMode; if(!row){ return '<div class="wind-card wind-slot empty" draggable="'+(editing?'true':'false')+'" data-wind-slot="'+index+'" data-wind-symbol=""><div class="market-slot-placeholder"><strong>點擊新增指標</strong><span>可替換市場風向項目</span></div></div>'; } const title=esc(row.name||row.symbol), symbol=esc(row.symbol), type=esc(row.type||'市場風向'), name=esc(row.name||row.symbol), change=Number.isFinite(row.change)?row.change:null, changePercent=Number.isFinite(row.changePercent)?row.changePercent:null, price=Number.isFinite(row.price)?fmtNumber(row.price,2):'-'; return '<div class="wind-card wind-slot has-mini-chart" draggable="'+(editing?'true':'false')+'" data-open="'+symbol+'" data-name="'+name+'" data-type="'+type+'" data-wind-slot="'+index+'" data-wind-symbol="'+symbol+'" data-wind-name="'+name+'" data-wind-type="'+type+'">'+(editing?'<div class="market-slot-actions"><button class="small-btn danger market-wind-slot-remove" type="button" data-wind-remove="'+index+'">移除</button></div>':'')+'<div class="card-copy"><div class="wind-title">'+title+'</div><div class="wind-price">'+price+'</div><div class="wind-change '+cls(change)+'">'+num(change)+' ('+pct(changePercent)+')</div></div>'+miniCanvas(row)+'</div>'; }
 function syncMarketWindDraftFromDom(){ const options=windOptionMap(); marketWindDraft=normalizeWindSlots([...windCardsEl.querySelectorAll('[data-wind-slot]')].map(card=>{ const symbol=card.dataset.windSymbol; if(!symbol) return null; const option=options.get(symbol); return option?{ symbol:option.symbol,name:option.name,type:option.type,group:option.group }:{ symbol,name:card.dataset.windName||symbol,type:card.dataset.windType||'市場風向' }; })); }
 function reorderMarketWindCard(targetCard,after){ const dragging=windCardsEl.querySelector('.wind-slot.dragging'); if(!dragging||!targetCard||dragging===targetCard)return; const before=new Map([...windCardsEl.children].map(card=>[card,card.getBoundingClientRect()])); windCardsEl.insertBefore(dragging,after?targetCard.nextSibling:targetCard); animateCardMoves(windCardsEl,before); }
 function getMarketWindCardAtPoint(x,y){ return [...windCardsEl.querySelectorAll('[data-wind-slot]')].find(card=>card!==windCardsEl.querySelector('.wind-slot.dragging')&&x>=card.getBoundingClientRect().left&&x<=card.getBoundingClientRect().right&&y>=card.getBoundingClientRect().top&&y<=card.getBoundingClientRect().bottom)||null; }
@@ -300,6 +391,15 @@ marketWindEditBtn.addEventListener('click',async()=>{ try{await enterMarketWindE
 marketWindDoneBtn.addEventListener('click',async()=>{ try{await finishMarketWindEdit();}catch(error){console.error(error);} });
 marketWindCancelBtn.addEventListener('click',()=>cancelMarketWindEdit());
 document.body.addEventListener('click',async e=>{
+  if(e.target.closest('[data-profile-open]')){ openProfileSettings(); return; }
+  if(e.target===profileLayer||e.target.closest('[data-close-profile]')){ closeProfileSettings(); return; }
+  if(e.target.closest('[data-profile-reset-avatar]')){ profileDraftAvatar=''; updateProfileAvatarPreview(); return; }
+  const moduleTrigger=e.target.closest('[data-module]');
+  if(moduleTrigger){
+    e.preventDefault();
+    setActiveModule(moduleTrigger.dataset.module);
+    return;
+  }
   const watchView=e.target.closest('[data-watch-view]');
   if(watchView){await switchWatchView(watchView.dataset.watchView==='cards'?'cards':'table'); return;}
   const watchTab=e.target.closest('[data-watchlist-tab]');
@@ -335,6 +435,31 @@ document.body.addEventListener('click',async e=>{
   const open=e.target.closest('[data-open]');
   if(open){ if(open.closest('#rankLayer'))closeRankModal(); openDetail(open.dataset.open,open.dataset.name,open.dataset.type,open); }
 });
-document.body.addEventListener('submit',async e=>{ const form=e.target.closest('[data-watchlist-form]'); if(!form)return; e.preventDefault(); await submitWatchlistNameForm(form); });
-document.body.addEventListener('change',async e=>{ const membership=e.target.closest('[data-watchlist-membership]'); if(membership){await toggleWatchlistMembership(membership.dataset.watchlistMembership,membership.checked); return;} const select=e.target.closest('[data-rank-market]'); if(!select)return; rankMarkets[select.dataset.rankMarket]=select.value; renderRankings(); });
-refreshButton.addEventListener('click', refreshNow); themeButton.addEventListener('click',()=>setTheme(document.body.classList.contains('light')?'dark':'light')); searchEl.addEventListener('input',()=>{clearTimeout(searchTimer);searchTimer=setTimeout(search,250);}); searchEl.addEventListener('focus',()=>{if(searchEl.value.trim())search();}); marketEl.addEventListener('change',search); document.addEventListener('click',e=>{if(!e.target.closest('.search'))suggestEl.innerHTML='';},true); window.addEventListener('keydown',e=>{if(e.key==='Escape'){if(document.body.classList.contains('watchlist-picker-open')){closeWatchlistPicker();return;} if(marketWindPickerIndex!==null){closeMarketWindPicker();return;} if(globalMarketPickerIndex!==null){closeGlobalMarketPicker();return;} if(marketWindEditMode){cancelMarketWindEdit();return;} if(globalMarketEditMode){cancelGlobalMarketEdit();return;} closeDetail();closeRankModal();}}); window.addEventListener('resize',()=>{if(detailData)drawChart(); requestAnimationFrame(drawMiniCharts);}); setTheme(localStorage.getItem('theme')||'dark'); load();
+document.body.addEventListener('submit',async e=>{ const profileForm=e.target.closest('[data-profile-form]'); if(profileForm){ e.preventDefault(); submitProfileForm(profileForm); return; } const form=e.target.closest('[data-watchlist-form]'); if(!form)return; e.preventDefault(); await submitWatchlistNameForm(form); });
+document.body.addEventListener('change',async e=>{ const profileAvatarInput=e.target.closest('[data-profile-avatar-input]'); if(profileAvatarInput){ try{ await handleProfileAvatarChange(profileAvatarInput); }catch(error){ console.error(error); } return; } const membership=e.target.closest('[data-watchlist-membership]'); if(membership){await toggleWatchlistMembership(membership.dataset.watchlistMembership,membership.checked); return;} const select=e.target.closest('[data-rank-market]'); if(!select)return; rankMarkets[select.dataset.rankMarket]=select.value; renderRankings(); });
+refreshButton.addEventListener('click', refreshNow);
+themeButton.addEventListener('click',()=>setTheme(document.body.classList.contains('light')?'dark':'light'));
+sidebarToggle?.addEventListener('click', toggleSidebar);
+sidebarResizeHandle?.addEventListener('pointerdown', beginSidebarResize);
+window.addEventListener('pointermove', updateSidebarResize);
+window.addEventListener('pointerup', endSidebarResize);
+window.addEventListener('pointercancel', endSidebarResize);
+searchEl.addEventListener('input',()=>{clearTimeout(searchTimer);searchTimer=setTimeout(search,250);});
+searchEl.addEventListener('focus',()=>{if(searchEl.value.trim())search();});
+marketEl.addEventListener('change',search);
+document.addEventListener('click',e=>{if(!e.target.closest('.search'))suggestEl.innerHTML='';},true);
+window.addEventListener('keydown',e=>{if(e.key==='Escape'){if(document.body.classList.contains('profile-open')){closeProfileSettings();return;} if(document.body.classList.contains('watchlist-picker-open')){closeWatchlistPicker();return;} if(marketWindPickerIndex!==null){closeMarketWindPicker();return;} if(globalMarketPickerIndex!==null){closeGlobalMarketPicker();return;} if(marketWindEditMode){cancelMarketWindEdit();return;} if(globalMarketEditMode){cancelGlobalMarketEdit();return;} closeDetail();closeRankModal();}});
+window.addEventListener('resize',()=>{
+  if(isMobileSidebar() && sidebarResizeState){
+    sidebarResizeState=null;
+    document.body.classList.remove('sidebar-resizing');
+  }
+  applySidebarState();
+  if(detailData)drawChart();
+  if(isDashboardModule()) requestAnimationFrame(drawMiniCharts);
+});
+applySidebarState();
+renderModuleState();
+renderProfileCard();
+setTheme(localStorage.getItem('theme')||'dark');
+load();

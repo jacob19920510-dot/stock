@@ -74,6 +74,26 @@
       "locked": true,
       "symbols": [
         {
+          "symbol": "00631L.TW",
+          "name": "元大台灣50正2",
+          "type": "台股"
+        },
+        {
+          "symbol": "0050.TW",
+          "name": "元大台灣50",
+          "type": "台股"
+        },
+        {
+          "symbol": "00981A.TW",
+          "name": "主動統一台股增長",
+          "type": "台股"
+        },
+        {
+          "symbol": "00403A.TW",
+          "name": "主動統一升級50",
+          "type": "台股"
+        },
+        {
           "symbol": "VOO",
           "name": "Vanguard S&P 500 ETF",
           "type": "美股"
@@ -139,21 +159,6 @@
           "type": "台股"
         },
         {
-          "symbol": "00631L.TW",
-          "name": "元大台灣50正2",
-          "type": "台股"
-        },
-        {
-          "symbol": "00981A.TW",
-          "name": "主動統一台股增長",
-          "type": "台股"
-        },
-        {
-          "symbol": "00403A.TW",
-          "name": "主動統一升級50",
-          "type": "台股"
-        },
-        {
           "symbol": "2330.TW",
           "name": "台積電",
           "type": "台股"
@@ -164,8 +169,8 @@
           "type": "台股"
         },
         {
-          "symbol": "0050.TW",
-          "name": "元大台灣50",
+          "symbol": "5274.TWO",
+          "name": "信驊",
           "type": "台股"
         }
       ]
@@ -235,8 +240,8 @@
         "group": "加密貨幣"
       },
       {
-        "symbol": "USDTWD=X",
-        "name": "美元/新台幣",
+        "symbol": "ZARTWD=X",
+        "name": "南非幣/新台幣",
         "type": "匯率",
         "group": "匯率"
       },
