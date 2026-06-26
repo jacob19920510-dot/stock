@@ -5,6 +5,7 @@ const path = require("node:path");
 const { readConfig, readWatchlists, createWatchlist, updateWatchlist, deleteWatchlist, addWatchSymbol, removeWatchSymbol, reorderWatchSymbols, reorderWatchlists, readGlobalMarket, updateGlobalMarket, updateMarketWind, readCurrency, updateCurrency, readProfile, updateProfile } = require("./config");
 const { quotesResponse, rankingResponse, yahooSearch, detailResponse, globalMarketOptionsResponse, marketWindResponse, marketWindOptionsResponse, currencyResponse, currencyOptionsResponse } = require("./services/yahoo");
 const { twUniverse } = require("./services/twse");
+const { newsResponse } = require("./services/news");
 
 const PORT = Number(process.env.PORT || 8000);
 const PUBLIC_DIR = path.join(__dirname, "public");
@@ -87,6 +88,7 @@ const server = http.createServer(async (req, res) => {
     if (req.method === "GET" && url.pathname === "/api/currency") return json(res, 200, await currencyResponse());
     if (req.method === "GET" && url.pathname === "/api/currency/options") return json(res, 200, await currencyOptionsResponse());
     if (req.method === "POST" && url.pathname === "/api/currency") return json(res, 200, await updateCurrency(req));
+    if (req.method === "GET" && url.pathname === "/api/news") return json(res, 200, await newsResponse(url.searchParams.get("category")));
     if (req.method === "GET" && url.pathname === "/api/quotes") return json(res, 200, await quotesResponse());
     if (req.method === "GET" && url.pathname === "/api/rankings") return json(res, 200, await rankingResponse());
     if (req.method === "GET" && url.pathname === "/api/search") return json(res, 200, await yahooSearch(url.searchParams.get("market"), url.searchParams.get("q")));

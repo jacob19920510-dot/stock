@@ -1,6 +1,7 @@
-const cardsEl = document.querySelector('#cards'), windCardsEl = document.querySelector('#windCards'), watchPanel = document.querySelector('#watchPanel'), rankPanel = document.querySelector('#rankPanel'), rankLayer = document.querySelector('#rankLayer'), rankModal = document.querySelector('#rankModal'), detailLayer = document.querySelector('#detailLayer'), detailEl = document.querySelector('#detail'), marketLayer = document.querySelector('#marketLayer'), marketModal = document.querySelector('#marketModal'), watchlistLayer = document.querySelector('#watchlistLayer'), watchlistModal = document.querySelector('#watchlistModal'), profileLayer = document.querySelector('#profileLayer'), profileModal = document.querySelector('#profileModal'), profileButton = document.querySelector('#profileButton'), sideUserAvatarEl = document.querySelector('#sideUserAvatar'), sideUserNameEl = document.querySelector('#sideUserName'), globalMarketEditBtn = document.querySelector('#globalMarketEditBtn'), globalMarketDoneBtn = document.querySelector('#globalMarketDoneBtn'), globalMarketCancelBtn = document.querySelector('#globalMarketCancelBtn'), marketWindEditBtn = document.querySelector('#marketWindEditBtn'), marketWindDoneBtn = document.querySelector('#marketWindDoneBtn'), marketWindCancelBtn = document.querySelector('#marketWindCancelBtn'), suggestEl = document.querySelector('#suggest'), searchEl = document.querySelector('#search'), marketEl = document.querySelector('#market'), refreshButton = document.querySelector('#refreshButton'), themeButton = document.querySelector('#themeButton'), themeButtons = [...document.querySelectorAll('[data-theme-toggle]')], refreshTimeEl = document.querySelector('#refreshTime'), sidebarEl = document.querySelector('#sidebar'), sidebarToggle = document.querySelector('#sidebarToggle'), sidebarResizeHandle = document.querySelector('#sidebarResizeHandle'), currencyFromSelect = document.querySelector('#currencyFromSelect'), currencyToSelect = document.querySelector('#currencyToSelect'), currencyAmountInput = document.querySelector('#currencyAmountInput'), currencyResultValueEl = document.querySelector('#currencyResultValue'), currencyRateTextEl = document.querySelector('#currencyRateText'), currencyChangeTextEl = document.querySelector('#currencyChangeText'), currencyUpdatedTimeEl = document.querySelector('#currencyUpdatedTime'), currencyFavoritesListEl = document.querySelector('#currencyFavoritesList'), currencyTableBodyEl = document.querySelector('#currencyTableBody'), currencyRefreshButton = document.querySelector('#currencyRefreshButton'), moduleViews = [...document.querySelectorAll('[data-module-view]')], moduleButtons = [...document.querySelectorAll('[data-module]')];
-let detailData=null, detailFetchedAt=null, detailWatchAllowed=true, chartMode='k', kPeriod='d', chartState=null, latest=null, rankings=null, globalMarketState=null, globalMarketDraft=null, globalMarketEditMode=false, globalMarketDragging=false, marketWindState=null, marketWindDraft=null, marketWindEditMode=false, marketWindDragging=false, marketWindPickerIndex=null, marketWindOptions=null, marketWindOptionsPromise=null, currencyState=null, currencyOptions=null, currencyPickerMode=null, currencyPersistPromise=Promise.resolve(), currencyPersistRevision=0, currencyFavoriteThrottleUntil=0, currencyLocalSnapshot=null, watchDragging=false, watchTabsDrag=null, watchTabsClickSuppressed=false, watchlistSortDrag=null, watchViewAnimating=false, watchViewMode=localStorage.getItem('watchViewMode')==='cards'?'cards':'table', activeWatchlistId=localStorage.getItem('activeWatchlistId')||'', watchlistPickerQuote=null, watchlistDialog=null, profileDraftAvatar='', globalMarketPickerIndex=null, globalMarketOptions=null, globalMarketOptionsPromise=null, rankMarkets={gainers:'tw',losers:'tw',volume:'tw'}, activeRankTab='gainers', searchTimer=null, loadTimer=null, activeModule=localStorage.getItem('activeModule')||'dashboard', sidebarCollapsed=localStorage.getItem('sidebarCollapsed')==='true', sidebarWidth=Number(localStorage.getItem('sidebarWidth'))||276, sidebarResizeState=null, moduleTransitionTimer=null;
+const cardsEl = document.querySelector('#cards'), windCardsEl = document.querySelector('#windCards'), watchPanel = document.querySelector('#watchPanel'), rankPanel = document.querySelector('#rankPanel'), rankLayer = document.querySelector('#rankLayer'), rankModal = document.querySelector('#rankModal'), detailLayer = document.querySelector('#detailLayer'), detailEl = document.querySelector('#detail'), marketLayer = document.querySelector('#marketLayer'), marketModal = document.querySelector('#marketModal'), watchlistLayer = document.querySelector('#watchlistLayer'), watchlistModal = document.querySelector('#watchlistModal'), profileLayer = document.querySelector('#profileLayer'), profileModal = document.querySelector('#profileModal'), profileButton = document.querySelector('#profileButton'), sideUserAvatarEl = document.querySelector('#sideUserAvatar'), sideUserNameEl = document.querySelector('#sideUserName'), globalMarketEditBtn = document.querySelector('#globalMarketEditBtn'), globalMarketDoneBtn = document.querySelector('#globalMarketDoneBtn'), globalMarketCancelBtn = document.querySelector('#globalMarketCancelBtn'), marketWindEditBtn = document.querySelector('#marketWindEditBtn'), marketWindDoneBtn = document.querySelector('#marketWindDoneBtn'), marketWindCancelBtn = document.querySelector('#marketWindCancelBtn'), suggestEl = document.querySelector('#suggest'), searchEl = document.querySelector('#search'), marketEl = document.querySelector('#market'), refreshButton = document.querySelector('#refreshButton'), themeButton = document.querySelector('#themeButton'), themeButtons = [...document.querySelectorAll('[data-theme-toggle]')], refreshTimeEl = document.querySelector('#refreshTime'), sidebarEl = document.querySelector('#sidebar'), sidebarToggle = document.querySelector('#sidebarToggle'), sidebarResizeHandle = document.querySelector('#sidebarResizeHandle'), currencyFromSelect = document.querySelector('#currencyFromSelect'), currencyToSelect = document.querySelector('#currencyToSelect'), currencyAmountInput = document.querySelector('#currencyAmountInput'), currencyResultValueEl = document.querySelector('#currencyResultValue'), currencyRateTextEl = document.querySelector('#currencyRateText'), currencyChangeTextEl = document.querySelector('#currencyChangeText'), currencyUpdatedTimeEl = document.querySelector('#currencyUpdatedTime'), currencyFavoritesListEl = document.querySelector('#currencyFavoritesList'), currencyTableBodyEl = document.querySelector('#currencyTableBody'), currencyRefreshButton = document.querySelector('#currencyRefreshButton'), newsTabsEl = document.querySelector('#newsTabs'), newsGridEl = document.querySelector('#newsGrid'), newsUpdatedTimeEl = document.querySelector('#newsUpdatedTime'), newsRefreshButton = document.querySelector('#newsRefreshButton'), moduleViews = [...document.querySelectorAll('[data-module-view]')], moduleButtons = [...document.querySelectorAll('[data-module]')];
+let detailData=null, detailFetchedAt=null, detailWatchAllowed=true, chartMode='k', kPeriod='d', chartState=null, latest=null, rankings=null, globalMarketState=null, globalMarketDraft=null, globalMarketEditMode=false, globalMarketDragging=false, marketWindState=null, marketWindDraft=null, marketWindEditMode=false, marketWindDragging=false, marketWindPickerIndex=null, marketWindOptions=null, marketWindOptionsPromise=null, currencyState=null, currencyOptions=null, currencyPickerMode=null, currencyPersistPromise=Promise.resolve(), currencyPersistRevision=0, currencyFavoriteThrottleUntil=0, currencyLocalSnapshot=null, newsState=null, newsLoading=false, activeNewsCategory=localStorage.getItem('activeNewsCategory')||'all', watchDragging=false, watchTabsDrag=null, watchTabsClickSuppressed=false, watchlistSortDrag=null, watchViewAnimating=false, watchViewMode=localStorage.getItem('watchViewMode')==='cards'?'cards':'table', activeWatchlistId=localStorage.getItem('activeWatchlistId')||'', watchlistPickerQuote=null, watchlistDialog=null, profileDraftAvatar='', globalMarketPickerIndex=null, globalMarketOptions=null, globalMarketOptionsPromise=null, rankMarkets={gainers:'tw',losers:'tw',volume:'tw'}, activeRankTab='gainers', searchTimer=null, loadTimer=null, activeModule=localStorage.getItem('activeModule')||'dashboard', sidebarCollapsed=localStorage.getItem('sidebarCollapsed')==='true', sidebarWidth=Number(localStorage.getItem('sidebarWidth'))||276, sidebarResizeState=null, moduleTransitionTimer=null;
 const SIDEBAR_MIN_WIDTH=220, SIDEBAR_MAX_WIDTH=380, SIDEBAR_COLLAPSED_WIDTH=96, SIDEBAR_MOBILE_BREAKPOINT=900;
+const NEWS_CATEGORIES=[['all','全部'],['tw','台股'],['us','美股'],['global','全球市場'],['tech','科技產業'],['crypto','加密貨幣'],['headline','財經要聞']];
 const DEFAULT_PROFILE={ name:'投資者', avatar:'' };
 let profileState={...DEFAULT_PROFILE};
 loadProfile();
@@ -100,6 +101,10 @@ function setActiveModule(nextModule){
     renderCurrency();
     if(!currencyState) refreshCurrencyOnly().catch(console.error);
   }
+  if(activeModule==='news'){
+    renderNews();
+    if(!newsState) refreshNewsOnly().catch(console.error);
+  }
 }
 function toggleSidebar(){ sidebarCollapsed=!sidebarCollapsed; applySidebarState(); }
 function beginSidebarResize(event){
@@ -142,7 +147,7 @@ async function submitProfileForm(form){
   await saveProfile();
   closeProfileSettings();
 }
-async function load(){ const [quoteRes,rankRes,marketRes,windRes]=await Promise.all([fetch('/api/quotes',{cache:'no-store'}),fetch('/api/rankings',{cache:'no-store'}),fetch('/api/global-market',{cache:'no-store'}),fetch('/api/market-wind',{cache:'no-store'})]); latest=await quoteRes.json(); rankings=await rankRes.json(); globalMarketState=await marketRes.json(); marketWindState=await windRes.json(); setRefreshTime(); renderAll(); if(activeModule==='currency'){ if(!currencyState) await refreshCurrencyOnly(); else renderCurrency(); } await refreshDetail().catch(()=>{}); clearTimeout(loadTimer); loadTimer=setTimeout(load,(latest.refreshSeconds||5)*1000); }
+async function load(){ const [quoteRes,rankRes,marketRes,windRes]=await Promise.all([fetch('/api/quotes',{cache:'no-store'}),fetch('/api/rankings',{cache:'no-store'}),fetch('/api/global-market',{cache:'no-store'}),fetch('/api/market-wind',{cache:'no-store'})]); latest=await quoteRes.json(); rankings=await rankRes.json(); globalMarketState=await marketRes.json(); marketWindState=await windRes.json(); setRefreshTime(); renderAll(); if(activeModule==='currency'){ if(!currencyState) await refreshCurrencyOnly(); else renderCurrency(); } if(activeModule==='news'){ if(!newsState) await refreshNewsOnly(); else renderNews(); } await refreshDetail().catch(()=>{}); clearTimeout(loadTimer); loadTimer=setTimeout(load,(latest.refreshSeconds||5)*1000); }
 async function reloadWatch(){ const res=await fetch('/api/quotes',{cache:'no-store'}); latest=await res.json(); setRefreshTime(); if(!watchViewAnimating) renderWatch(); requestAnimationFrame(drawMiniCharts); }
 function renderAll(){ if(!isDashboardModule()) return; if(!(globalMarketEditMode&&globalMarketDragging)) renderGlobalMarket(); if(!(marketWindEditMode&&marketWindDragging)) renderWind(); if(!watchDragging&&!watchViewAnimating) renderWatch(); requestAnimationFrame(drawMiniCharts); }
 function renderCards(rows){ renderGlobalMarket(); }
@@ -309,6 +314,53 @@ async function refreshCurrencyOnly(){
     if(activeModule==='currency') renderCurrency();
   } finally {
     setTimeout(()=>currencyRefreshButton?.classList.remove('spinning'),650);
+  }
+}
+
+function renderNewsTabs(){
+  if(!newsTabsEl) return;
+  newsTabsEl.innerHTML=NEWS_CATEGORIES.map(([key,label])=>'<button class="news-tab '+(key===activeNewsCategory?'active':'')+'" type="button" data-news-category="'+esc(key)+'">'+esc(label)+'</button>').join('');
+}
+function newsDate(value){
+  if(!value) return '-';
+  const date=new Date(value), now=Date.now(), diff=Math.max(0,now-date.getTime()), minutes=Math.floor(diff/60000);
+  if(minutes<1) return '剛剛';
+  if(minutes<60) return minutes+' 分鐘前';
+  const hours=Math.floor(minutes/60);
+  if(hours<24) return hours+' 小時前';
+  return date.toLocaleDateString('zh-TW',{month:'2-digit',day:'2-digit'});
+}
+function newsImageMarkup(article,large=false){
+  if(article?.image) return '<img class="'+(article.imageKind==='source'?'news-source-logo':'')+'" src="'+esc(article.image)+'" alt="" loading="lazy">';
+  return '<div class="news-image-fallback '+(large?'large':'')+'" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M4 6.5h16v11H4z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M7 10h5M7 13h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></div>';
+}
+function renderNewsCard(article,featured=false){
+  const label=NEWS_CATEGORIES.find(([key])=>key===article.category)?.[1]||article.category||'新聞';
+  return '<article class="news-card '+(featured?'featured':'')+'" data-news-open="'+esc(article.url)+'"><div class="news-thumb">'+newsImageMarkup(article,featured)+'</div><div class="news-card-copy"><div class="news-meta"><span>'+esc(label)+'</span><span>'+esc(article.source||'新聞來源')+'</span><span>'+newsDate(article.publishedAt)+'</span></div><h2>'+esc(article.title)+'</h2><p>'+esc(article.summary||'')+'</p><div class="news-card-foot"><span>'+esc(article.language||'')+'</span><strong>閱讀原文</strong></div></div></article>';
+}
+function renderNews(){
+  renderNewsTabs();
+  if(!newsGridEl) return;
+  if(newsLoading&&!newsState){ newsGridEl.innerHTML='<div class="news-empty">正在整理最新財經新聞...</div>'; return; }
+  const rows=newsState?.articles||[];
+  if(newsUpdatedTimeEl) newsUpdatedTimeEl.textContent=fmtTime(newsState?.fetchedAt);
+  if(!rows.length){ newsGridEl.innerHTML='<div class="news-empty">暫時沒有取得新聞，稍後再試。</div>'; return; }
+  const featured=rows[0], rest=rows.slice(1);
+  const warnings=(newsState?.warnings||[]).length?'<div class="news-warning">部分來源暫時無法讀取，已顯示可用新聞。</div>':'';
+  newsGridEl.innerHTML=warnings+'<div class="news-feature">'+renderNewsCard(featured,true)+'</div><div class="news-list">'+rest.map(article=>renderNewsCard(article,false)).join('')+'</div>';
+}
+async function refreshNewsOnly({force=false}={}){
+  if(newsLoading&&!force) return;
+  newsLoading=true;
+  newsRefreshButton?.classList.add('spinning');
+  renderNews();
+  try{
+    const res=await fetch('/api/news?category='+encodeURIComponent(activeNewsCategory),{cache:'no-store'});
+    newsState=await res.json();
+    renderNews();
+  } finally {
+    newsLoading=false;
+    setTimeout(()=>newsRefreshButton?.classList.remove('spinning'),650);
   }
 }
 
@@ -549,6 +601,11 @@ document.body.addEventListener('click',async e=>{
   if(e.target.closest('[data-currency-manage-favorites]')){ openCurrencyPicker('favorites'); return; }
   const currencyToggle=e.target.closest('[data-currency-toggle-favorite]');
   if(currencyToggle){ await toggleCurrencyFavorite(currencyToggle.dataset.currencyToggleFavorite); return; }
+  const newsCategory=e.target.closest('[data-news-category]');
+  if(newsCategory){ activeNewsCategory=newsCategory.dataset.newsCategory||'all'; localStorage.setItem('activeNewsCategory',activeNewsCategory); newsState=null; await refreshNewsOnly({force:true}); return; }
+  if(e.target.closest('[data-news-refresh]')){ await refreshNewsOnly({force:true}); return; }
+  const newsOpen=e.target.closest('[data-news-open]');
+  if(newsOpen){ const url=newsOpen.dataset.newsOpen; if(url) window.open(url,'_blank','noopener'); return; }
   const moduleTrigger=e.target.closest('[data-module]');
   if(moduleTrigger){
     e.preventDefault();

@@ -59,6 +59,15 @@
             </span>
             <span class="nav-item-label">外幣換算器</span>
           </button>
+          <button class="nav-item" type="button" data-module="news">
+            <span class="nav-item-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M5 5.5h11.5A2.5 2.5 0 0 1 19 8v10.5H7.5A2.5 2.5 0 0 1 5 16V5.5Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                <path d="M8 9h7M8 12h7M8 15h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </span>
+            <span class="nav-item-label">財經新聞</span>
+          </button>
         </nav>
 
         <div class="side-spacer"></div>
@@ -293,6 +302,30 @@
               </table>
             </div>
           </section>
+        </div>
+      </section>
+
+      <section class="module-view news-module" data-module-view="news">
+        <div class="news-shell">
+          <header class="news-hero">
+            <div>
+              <h1>財經新聞</h1>
+              <p>快速瀏覽台股、美股、全球市場與科技產業重點新聞。</p>
+            </div>
+            <div class="news-actions">
+              <span class="news-updated">更新時間 <span id="newsUpdatedTime">-</span></span>
+              <button class="theme-toggle" type="button" data-theme-toggle title="切換主題" aria-label="切換主題">
+                <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+                <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+              </button>
+              <button class="refresh-btn news-refresh" id="newsRefreshButton" type="button" data-news-refresh aria-label="刷新財經新聞">
+                <svg class="icon-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/><path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14"/></svg>
+                <span>刷新</span>
+              </button>
+            </div>
+          </header>
+          <div class="news-tabs" id="newsTabs" aria-label="新聞分類"></div>
+          <div class="news-grid" id="newsGrid"></div>
         </div>
       </section>
 
