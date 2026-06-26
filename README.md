@@ -1,3 +1,43 @@
+# 財經新聞 API Key 設定
+
+財經新聞模組使用 Marketaux 補充帶圖片的財經新聞。沒有設定 API key 時，頁面仍會使用 RSS 備援新聞，但圖片可能只會顯示新聞來源圖標。
+
+可以用下面任一種方式設定 Marketaux API key：
+
+## 方式一：使用環境變數
+
+PowerShell：
+
+```powershell
+$env:MARKETAUX_API_KEY="你的 Marketaux API key"
+node server.js
+```
+
+Windows CMD：
+
+```bat
+set MARKETAUX_API_KEY=你的 Marketaux API key
+node server.js
+```
+
+## 方式二：使用本機 secrets.json
+
+在專案根目錄建立 `secrets.json`：
+
+```json
+{
+  "marketauxApiKey": "你的 Marketaux API key"
+}
+```
+
+`secrets.json` 只適合放在本機，不要提交到 git。專案的 `.gitignore` 已經忽略這個檔案。
+
+設定完成後重新啟動服務，再打開：
+
+```text
+http://localhost:8000/
+```
+
 # MarketView
 
 本機使用的輕量股票看盤工具。  

@@ -1,10 +1,26 @@
-const CACHE_TTL_MS = 10 * 60 * 1000;
+const fs = require("node:fs");
+const path = require("node:path");
+
+const CACHE_TTL_MS = 60 * 1000;
 const FEED_TIMEOUT_MS = 8000;
 const IMAGE_TIMEOUT_MS = 4000;
+const API_TIMEOUT_MS = 8000;
 const MAX_ARTICLES = 36;
+const MARKETAUX_API_KEY = readMarketauxApiKey();
 
 const cache = new Map();
 const imageCache = new Map();
+
+function readMarketauxApiKey() {
+  if (process.env.MARKETAUX_API_KEY) return process.env.MARKETAUX_API_KEY;
+  try {
+    const secretsPath = path.join(__dirname, "..", "secrets.json");
+    const secrets = JSON.parse(fs.readFileSync(secretsPath, "utf8"));
+    return String(secrets.marketauxApiKey || "").trim();
+  } catch {
+    return "";
+  }
+}
 
 const CATEGORY_LABELS = {
   all: "全部",
@@ -56,6 +72,16 @@ const FEEDS = {
   ],
 };
 
+const MARKETAUX_QUERIES = {
+  all: { search: "stock market OR economy OR finance", language: "en", countries: "us" },
+  tw: { search: "Taiwan Semiconductor OR TSMC OR Taiwan stocks", language: "en", countries: "tw,us" },
+  us: { search: "US stocks OR Nasdaq OR S&P 500 OR earnings", language: "en", countries: "us" },
+  global: { search: "global markets OR forex OR bonds OR commodities", language: "en", countries: "us,gb,ca,au" },
+  tech: { search: "semiconductor OR AI stocks OR Nvidia OR TSMC", language: "en", countries: "us,tw" },
+  crypto: { search: "bitcoin OR ethereum OR crypto market", language: "en", countries: "us" },
+  headline: { search: "finance OR markets OR economy", language: "en", countries: "us" },
+};
+
 function normalizeCategory(category) {
   const key = String(category || "all").trim().toLowerCase();
   return FEEDS[key] ? key : "all";
@@ -100,6 +126,14 @@ function sourceLogo(url) {
   }
 }
 
+function sourceOrigin(url) {
+  try {
+    return new URL(url).origin;
+  } catch {
+    return "";
+  }
+}
+
 function articleId(url, title) {
   const base = `${url || ""}:${title || ""}`;
   let hash = 0;
@@ -109,6 +143,22 @@ function articleId(url, title) {
 
 async function fetchText(url) {
   return fetchTextWithTimeout(url, FEED_TIMEOUT_MS);
+}
+
+async function fetchJsonWithTimeout(url, timeoutMs) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, {
+      signal: controller.signal,
+      redirect: "follow",
+      headers: { "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) stock-dashboard/1.0" },
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.json();
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 async function fetchTextWithTimeout(url, timeoutMs) {
@@ -212,6 +262,58 @@ async function fetchFeed(feed) {
   return parseFeed(xml, feed);
 }
 
+function marketauxNewsUrl(category) {
+  const query = MARKETAUX_QUERIES[category] || MARKETAUX_QUERIES.all;
+  const publishedAfter = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 19);
+  const params = new URLSearchParams({
+    api_token: MARKETAUX_API_KEY,
+    filter_entities: "true",
+    limit: "3",
+    published_after: publishedAfter,
+    search: query.search,
+    language: query.language,
+    countries: query.countries,
+  });
+  return `https://api.marketaux.com/v1/news/all?${params.toString()}`;
+}
+
+function marketauxSourceName(source) {
+  if (!source) return "Marketaux";
+  if (typeof source === "string") return source;
+  return String(source.name || source.domain || "Marketaux").trim() || "Marketaux";
+}
+
+function parseMarketauxNews(payload, category) {
+  return (Array.isArray(payload?.data) ? payload.data : []).map(row => {
+    const url = String(row.url || "").trim();
+    const title = String(row.title || "").trim();
+    const image = String(row.image_url || "").trim();
+    return {
+      id: articleId(url, title || row.uuid),
+      title,
+      summary: String(row.description || row.snippet || "").trim().slice(0, 220),
+      url,
+      source: marketauxSourceName(row.source),
+      sourceUrl: sourceOrigin(url),
+      category,
+      publishedAt: new Date(Date.parse(row.published_at) || Date.now()).toISOString(),
+      image,
+      imageKind: image ? "article" : "",
+      language: String(row.language || "").trim() || (category === "tw" ? "zh" : "en"),
+      provider: "marketaux",
+    };
+  }).filter(article => article.title && article.url);
+}
+
+async function fetchMarketauxNews(category) {
+  if (!MARKETAUX_API_KEY) return [];
+  return parseMarketauxNews(await fetchJsonWithTimeout(marketauxNewsUrl(category), API_TIMEOUT_MS), category);
+}
+
+function hasMarketauxNews() {
+  return Boolean(MARKETAUX_API_KEY);
+}
+
 function uniqueArticles(rows) {
   const seen = new Set();
   const result = [];
@@ -221,7 +323,10 @@ function uniqueArticles(rows) {
     seen.add(key);
     result.push(row);
   }
-  return result.sort((a, b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt)).slice(0, MAX_ARTICLES);
+  const imageBonusMs = 24 * 60 * 60 * 1000;
+  const marketauxBonusMs = 60 * 24 * 60 * 60 * 1000;
+  const rank = article => (Date.parse(article.publishedAt) || 0) + (article.image ? imageBonusMs : 0) + (article.provider === "marketaux" ? marketauxBonusMs : 0);
+  return result.sort((a, b) => rank(b) - rank(a)).slice(0, MAX_ARTICLES);
 }
 
 async function newsResponse(category) {
@@ -230,10 +335,18 @@ async function newsResponse(category) {
   if (cached && Date.now() - cached.time < CACHE_TTL_MS) return cached.value;
 
   const feeds = FEEDS[key];
-  const settled = await Promise.allSettled(feeds.map(fetchFeed));
+  const sources = [
+    ...(hasMarketauxNews() ? [{ name: "Marketaux", url: "https://www.marketaux.com/", language: MARKETAUX_QUERIES[key]?.language || "en" }] : []),
+    ...feeds.map(feed => ({ name: feed.name, url: feed.url, language: feed.language })),
+  ];
+  const tasks = [
+    ...(hasMarketauxNews() ? [fetchMarketauxNews(key)] : []),
+    ...feeds.map(fetchFeed),
+  ];
+  const settled = await Promise.allSettled(tasks);
   const articles = await enrichArticleImages(uniqueArticles(settled.flatMap(result => result.status === "fulfilled" ? result.value : [])));
   const warnings = settled
-    .map((result, index) => result.status === "rejected" ? `${feeds[index].name}: ${result.reason?.message || "fetch failed"}` : "")
+    .map((result, index) => result.status === "rejected" ? `${sources[index]?.name || "News source"}: ${result.reason?.message || "fetch failed"}` : "")
     .filter(Boolean);
 
   const value = articles.length ? {
@@ -241,7 +354,7 @@ async function newsResponse(category) {
     category: key,
     label: CATEGORY_LABELS[key],
     fetchedAt: new Date().toISOString(),
-    sources: feeds.map(feed => ({ name: feed.name, url: feed.url, language: feed.language })),
+    sources,
     articles,
     ...(warnings.length ? { warnings } : {}),
   } : {
@@ -249,7 +362,7 @@ async function newsResponse(category) {
     category: key,
     label: CATEGORY_LABELS[key],
     fetchedAt: new Date().toISOString(),
-    sources: feeds.map(feed => ({ name: feed.name, url: feed.url, language: feed.language })),
+    sources,
     articles: [],
     error: warnings.join("; ") || "no articles",
   };

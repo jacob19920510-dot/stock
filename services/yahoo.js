@@ -73,6 +73,26 @@ async function fetchTwFutureChart(symbol) {
 
 const twFutureHistoryCache = new Map();
 const rankingsCache = new Map();
+const chartCache = new Map();
+const chartInflight = new Map();
+let yahooQueue = Promise.resolve();
+
+const YAHOO_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/126.0 Safari/537.36";
+const CHART_CACHE_TTL_MS = 30 * 1000;
+const YAHOO_REQUEST_GAP_MS = 120;
+
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function scheduleYahooRequest(task) {
+  const run = yahooQueue.then(async () => {
+    await delay(YAHOO_REQUEST_GAP_MS);
+    return task();
+  });
+  yahooQueue = run.catch(() => {});
+  return run;
+}
 
 const GLOBAL_INDEX_RANKING_UNIVERSE = [
   ["^TWII", "\u53f0\u7063\u52a0\u6b0a\u6307\u6578"], ["^DJI", "\u9053\u74ca\u5de5\u696d\u6307\u6578"], ["^GSPC", "S&P 500\u6307\u6578"],
@@ -165,26 +185,37 @@ async function fetchChart(symbol, range = "1d", interval = "1m") {
   const clean = cleanSymbol(symbol);
   if (!clean) throw new Error("missing symbol");
   if (isTwFuture(clean)) return fetchTwFutureChart(clean);
+  const cacheKey = `${clean}:${range}:${interval}`;
+  const cached = chartCache.get(cacheKey);
+  if (cached && Date.now() - cached.time < CHART_CACHE_TTL_MS) return cached.result;
+  const inflight = chartInflight.get(cacheKey);
+  if (inflight) return inflight;
   const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(clean)}?interval=${encodeURIComponent(interval)}&range=${encodeURIComponent(range)}`;
-  const res = await fetch(url, { headers: { "user-agent": "stock-dashboard/1.0" } });
-  if (!res.ok) throw new Error(`Yahoo ${res.status}`);
-  const data = await res.json();
-  const result = data.chart && data.chart.result && data.chart.result[0];
-  if (!result || !result.meta) throw new Error(data.chart?.error?.description || "no quote");
+  const request = scheduleYahooRequest(async () => {
+    const res = await fetch(url, { headers: { "user-agent": YAHOO_USER_AGENT, "accept": "application/json,text/plain,*/*" } });
+    if (!res.ok) throw new Error(`Yahoo ${res.status}`);
+    const data = await res.json();
+    const result = data.chart && data.chart.result && data.chart.result[0];
+    if (!result || !result.meta) throw new Error(data.chart?.error?.description || "no quote");
 
-  const quote = result.indicators?.quote?.[0] || {};
-  const candles = (result.timestamp || []).map((time, i) => ({
-    time: time * 1000,
-    open: numberOrNull(quote.open?.[i]),
-    high: numberOrNull(quote.high?.[i]),
-    low: numberOrNull(quote.low?.[i]),
-    close: numberOrNull(quote.close?.[i]),
-    volume: numberOrNull(quote.volume?.[i]),
-  })).filter(x =>
-    [x.open, x.high, x.low, x.close].every(v => Number.isFinite(v) && v > 0)
-  );
+    const quote = result.indicators?.quote?.[0] || {};
+    const candles = (result.timestamp || []).map((time, i) => ({
+      time: time * 1000,
+      open: numberOrNull(quote.open?.[i]),
+      high: numberOrNull(quote.high?.[i]),
+      low: numberOrNull(quote.low?.[i]),
+      close: numberOrNull(quote.close?.[i]),
+      volume: numberOrNull(quote.volume?.[i]),
+    })).filter(x =>
+      [x.open, x.high, x.low, x.close].every(v => Number.isFinite(v) && v > 0)
+    );
 
-  return { meta: result.meta, candles };
+    const parsed = { meta: result.meta, candles };
+    chartCache.set(cacheKey, { time: Date.now(), result: parsed });
+    return parsed;
+  }).finally(() => chartInflight.delete(cacheKey));
+  chartInflight.set(cacheKey, request);
+  return request;
 }
 
 function numberOrNull(value) {
@@ -536,7 +567,7 @@ async function fetchUsRankings() {
 async function fetchUsScreener(kind) {
   const id = US_SCREENER_IDS[kind];
   const url = `https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved?formatted=false&scrIds=${encodeURIComponent(id)}&count=100`;
-  const res = await fetch(url, { headers: { "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" } });
+  const res = await scheduleYahooRequest(() => fetch(url, { headers: { "user-agent": YAHOO_USER_AGENT, "accept": "application/json,text/plain,*/*" } }));
   if (!res.ok) throw new Error(`Yahoo US rank ${res.status}`);
   const data = await res.json();
   const quotes = data.finance?.result?.[0]?.quotes || [];
@@ -606,7 +637,7 @@ async function yahooSearch(market, query) {
   if (market === "tw") return twSearch(q);
 
   const url = `https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(q)}&quotesCount=10&newsCount=0`;
-  const res = await fetch(url, { headers: { "user-agent": "stock-dashboard/1.0" } });
+  const res = await scheduleYahooRequest(() => fetch(url, { headers: { "user-agent": YAHOO_USER_AGENT, "accept": "application/json,text/plain,*/*" } }));
   if (!res.ok) throw new Error(`Yahoo ${res.status}`);
 
   const data = await res.json();
