@@ -147,7 +147,31 @@ async function submitProfileForm(form){
   await saveProfile();
   closeProfileSettings();
 }
-async function load(){ const [quoteRes,rankRes,marketRes,windRes]=await Promise.all([fetch('/api/quotes',{cache:'no-store'}),fetch('/api/rankings',{cache:'no-store'}),fetch('/api/global-market',{cache:'no-store'}),fetch('/api/market-wind',{cache:'no-store'})]); latest=await quoteRes.json(); rankings=await rankRes.json(); globalMarketState=await marketRes.json(); marketWindState=await windRes.json(); setRefreshTime(); renderAll(); if(activeModule==='currency'){ if(!currencyState) await refreshCurrencyOnly(); else renderCurrency(); } if(activeModule==='news'){ if(!newsState) await refreshNewsOnly(); else renderNews(); } await refreshDetail().catch(()=>{}); clearTimeout(loadTimer); loadTimer=setTimeout(load,(latest.refreshSeconds||5)*1000); }
+async function fetchJson(path){ const res=await fetch(path,{cache:'no-store'}); if(!res.ok) throw new Error(path+' HTTP '+res.status); return res.json(); }
+function loadDashboardSideData(){
+  const marketPromise=fetchJson('/api/global-market').then(data=>{ globalMarketState=data; if(isDashboardModule()) renderGlobalMarket(); return data; }).catch(console.error);
+  const windPromise=fetchJson('/api/market-wind').then(data=>{ marketWindState=data; if(isDashboardModule()) renderWind(); return data; }).catch(console.error);
+  const rankPromise=fetchJson('/api/rankings').then(data=>{ rankings=data; renderRankings(); return data; }).catch(console.error);
+  return [marketPromise,windPromise,rankPromise];
+}
+async function load(){
+  const quoteTask=fetchJson('/api/quotes');
+  const sideTasks=loadDashboardSideData();
+  try{
+    latest=await quoteTask;
+    setRefreshTime();
+    renderAll();
+    if(activeModule==='currency'){ if(!currencyState) refreshCurrencyOnly().catch(console.error); else renderCurrency(); }
+    if(activeModule==='news'){ if(!newsState) refreshNewsOnly().catch(console.error); else renderNews(); }
+    await refreshDetail().catch(()=>{});
+  } catch(error){
+    console.error(error);
+  } finally {
+    await Promise.allSettled(sideTasks);
+    clearTimeout(loadTimer);
+    loadTimer=setTimeout(load,(latest?.refreshSeconds||30)*1000);
+  }
+}
 async function reloadWatch(){ const res=await fetch('/api/quotes',{cache:'no-store'}); latest=await res.json(); setRefreshTime(); if(!watchViewAnimating) renderWatch(); requestAnimationFrame(drawMiniCharts); }
 function renderAll(){ if(!isDashboardModule()) return; if(!(globalMarketEditMode&&globalMarketDragging)) renderGlobalMarket(); if(!(marketWindEditMode&&marketWindDragging)) renderWind(); if(!watchDragging&&!watchViewAnimating) renderWatch(); requestAnimationFrame(drawMiniCharts); }
 function renderCards(rows){ renderGlobalMarket(); }
@@ -482,7 +506,7 @@ function rankNote(key,market){ if(key!=='gainers'&&key!=='losers')return ''; con
 function rankList(rows,mode){ return '<div class="rank-list">'+(rows.length?rows.map((q,i)=>{ const mid=mode==='volume'?fmtInt(q.volume):num(q.change), tail=pct(q.changePercent); return '<div class="rank-row" data-open="'+esc(q.symbol)+'" data-name="'+esc(q.name)+'" data-type="'+esc(q.type)+'"><span class="rank-no">'+(i+1)+'</span><span class="rank-name"><strong>'+esc(q.name)+'</strong><em>'+esc(q.symbol.replace(/^\^/,''))+'</em></span><span class="rank-price">'+fmtNumber(q.price,2)+'</span><span class="'+(mode==='volume'?'':cls(q.change))+'">'+mid+'</span><span class="'+cls(q.changePercent)+'">'+tail+'</span></div>'; }).join(''):'<div class="rank-empty">目前沒有符合條件的標的</div>')+'</div>'; }
 function openRankModal(key){ const market=rankMarkets[key]||'tw', title=key==='global'?'國際大盤指數漲幅排行':(key==='gainers'?'熱門股漲幅':key==='losers'?'熱門股跌幅':'成交量排行')+(key==='global'?'':' · '+(market==='tw'?'台股':'美股')), rows=key==='global'?(rankings?.global||[]):rankings?.markets?.[market]?.[key]||[]; rankModal.innerHTML='<div class="rank-modal-head"><h2>'+title+'</h2><button class="small-btn" data-close-rank>關閉</button></div>'+rankNote(key,market)+rankList(rows.slice(0,20),key); document.body.classList.add('rank-open'); }
 function closeRankModal(){ document.body.classList.remove('rank-open'); rankModal.innerHTML=''; }
-async function refreshNow(){ if(refreshButton.classList.contains('spinning'))return; refreshButton.classList.add('spinning'); try{ const [quoteRes,rankRes,marketRes,windRes]=await Promise.all([fetch('/api/quotes',{cache:'no-store'}),fetch('/api/rankings',{cache:'no-store'}),fetch('/api/global-market',{cache:'no-store'}),fetch('/api/market-wind',{cache:'no-store'})]); latest=await quoteRes.json(); rankings=await rankRes.json(); globalMarketState=await marketRes.json(); marketWindState=await windRes.json(); setRefreshTime(); renderAll(); if(activeModule==='currency') renderCurrency(); await refreshDetail().catch(()=>{}); } finally{ setTimeout(()=>refreshButton.classList.remove('spinning'),800); } }
+async function refreshNow(){ if(refreshButton.classList.contains('spinning'))return; refreshButton.classList.add('spinning'); const quoteTask=fetchJson('/api/quotes'); const sideTasks=loadDashboardSideData(); try{ latest=await quoteTask; setRefreshTime(); renderAll(); if(activeModule==='currency') renderCurrency(); await refreshDetail().catch(()=>{}); } finally{ await Promise.allSettled(sideTasks); setTimeout(()=>refreshButton.classList.remove('spinning'),800); } }
 function table(headers, rows, draggable=false){ return '<table><thead><tr>'+headers.map(h=>'<th>'+h+'</th>').join('')+'</tr></thead><tbody>'+rows.map(r=>{ const q=r[r.length-1]; return '<tr '+(draggable?'draggable="true" data-watch-row ':'')+'data-open="'+esc(q.symbol)+'" data-name="'+esc(q.name)+'" data-type="'+esc(q.type)+'">'+r.slice(0,-1).map((c,i)=>'<td class="'+(String(c).includes('▲')?'up':String(c).includes('▼')?'down':String(c).includes('+')?'up':String(c).includes('-')?'down':'')+'">'+c+'</td>').join('')+'</tr>'; }).join('')+'</tbody></table>'; }
 function num(v){ return Number.isFinite(v)?(v>0?'+':'')+fmtNumber(v,2):'-'; } function pct(v){ return Number.isFinite(v)?(v>0?'▲ ':v<0?'▼ ':'')+fmtNumber(Math.abs(v),2)+'%':'-'; } function money(v){ return Number.isFinite(v)?(v>0?'+':'')+fmtNumber(v,2):'-'; }
 async function search(){ const q=searchEl.value.trim(); if(!q){suggestEl.innerHTML='';return;} suggestEl.innerHTML='<div class="pick muted">搜尋中...</div>'; const res=await fetch('/api/search?market='+encodeURIComponent(marketEl.value)+'&q='+encodeURIComponent(q),{cache:'no-store'}); const items=await res.json(); suggestEl.innerHTML=items.map(x=>{const inW=isInAnyWatchlist(x.symbol);return '<div class="pick" data-open="'+esc(x.symbol)+'" data-name="'+esc(x.name)+'" data-type="'+esc(x.type)+'"><div><strong>'+esc(x.symbol)+'</strong> <span>'+esc(x.type)+' '+esc(x.name)+'</span></div><button class="'+(inW?'small-btn':'')+'" data-watch-pick="'+esc(x.symbol)+'" data-name="'+esc(x.name)+'" data-type="'+esc(x.type)+'">'+(inW?'管理自選':'加入自選')+'</button></div>';}).join('')||'<div class="pick muted">沒有結果</div>'; }

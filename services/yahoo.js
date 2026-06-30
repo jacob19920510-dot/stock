@@ -75,10 +75,13 @@ const twFutureHistoryCache = new Map();
 const rankingsCache = new Map();
 const chartCache = new Map();
 const chartInflight = new Map();
+const sparkQuoteCache = new Map();
+const sparkQuoteInflight = new Map();
 let yahooQueue = Promise.resolve();
 
 const YAHOO_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/126.0 Safari/537.36";
 const CHART_CACHE_TTL_MS = 30 * 1000;
+const SPARK_QUOTE_CACHE_TTL_MS = 15 * 1000;
 const YAHOO_REQUEST_GAP_MS = 120;
 
 function delay(ms) {
@@ -218,9 +221,81 @@ async function fetchChart(symbol, range = "1d", interval = "1m") {
   return request;
 }
 
+async function fetchSparkQuotes(symbols) {
+  const cleanSymbols = [...new Set(symbols.map(cleanSymbol).filter(symbol => symbol && !isTwFuture(symbol)))];
+  const now = Date.now();
+  const result = new Map();
+  const missing = [];
+  for (const symbol of cleanSymbols) {
+    const cached = sparkQuoteCache.get(symbol);
+    if (cached && now - cached.time < SPARK_QUOTE_CACHE_TTL_MS) result.set(symbol, cached.value);
+    else missing.push(symbol);
+  }
+
+  const chunks = [];
+  for (let index = 0; index < missing.length; index += 20) chunks.push(missing.slice(index, index + 20));
+  await Promise.all(chunks.map(async chunk => {
+    const key = chunk.join(",");
+    const inflight = sparkQuoteInflight.get(key);
+    if (inflight) {
+      const rows = await inflight;
+      rows.forEach((value, symbol) => result.set(symbol, value));
+      return;
+    }
+    const request = scheduleYahooRequest(async () => {
+      const params = new URLSearchParams({ symbols: chunk.join(","), range: "1d", interval: "1m" });
+      const url = `https://query1.finance.yahoo.com/v7/finance/spark?${params}`;
+      const res = await fetch(url, { headers: { "user-agent": YAHOO_USER_AGENT, "accept": "application/json,text/plain,*/*" } });
+      if (!res.ok) throw new Error(`Yahoo spark ${res.status}`);
+      const data = await res.json();
+      const rows = new Map();
+      for (const row of data.spark?.result || []) {
+        const symbol = cleanSymbol(row.symbol);
+        const value = row.response?.[0];
+        if (!symbol || !value?.meta) continue;
+        sparkQuoteCache.set(symbol, { time: Date.now(), value });
+        rows.set(symbol, value);
+      }
+      return rows;
+    }).finally(() => sparkQuoteInflight.delete(key));
+    sparkQuoteInflight.set(key, request);
+    const rows = await request;
+    rows.forEach((value, symbol) => result.set(symbol, value));
+  }));
+  return result;
+}
+
 function numberOrNull(value) {
   const n = Number(value);
   return Number.isFinite(n) ? n : null;
+}
+
+async function sparkQuoteToQuote(item, spark) {
+  const symbol = cleanSymbol(item.symbol);
+  const meta = spark.meta || {};
+  const timestamps = spark.timestamp || [];
+  const closes = spark.indicators?.quote?.[0]?.close || [];
+  const price = Number(meta.regularMarketPrice);
+  const previousClose = Number(meta.previousClose || meta.chartPreviousClose);
+  const change = Number.isFinite(price) && Number.isFinite(previousClose) ? price - previousClose : null;
+  const changePercent = change !== null && previousClose ? (change / previousClose) * 100 : null;
+  const updatedAt = meta.regularMarketTime ? new Date(meta.regularMarketTime * 1000).toISOString() : null;
+  return {
+    name: item.name || meta.shortName || meta.longName || meta.name || symbol,
+    symbol,
+    type: item.type || marketType(symbol, meta),
+    price,
+    change,
+    changePercent,
+    volume: Number(meta.regularMarketVolume),
+    shares: Number(item.shares),
+    cost: Number(item.cost),
+    currency: meta.currency || "",
+    market: meta.exchangeName || meta.exchange || "",
+    updatedAt,
+    sparkline: timestamps.map((time, index) => ({ time: time * 1000, close: numberOrNull(closes[index]) })).filter(x => Number.isFinite(x.close)),
+    ok: true,
+  };
 }
 
 async function fetchQuote(item) {
@@ -251,11 +326,14 @@ async function fetchQuote(item) {
   };
 }
 
-async function quotesResponse() {
-  const config = await readConfig();
-  const quoteItems = async items => Promise.all(items.map(async item => {
+async function fetchQuotes(items) {
+  const rows = Array.isArray(items) ? items : [];
+  const sparkRows = await fetchSparkQuotes(rows.map(item => item.symbol)).catch(() => new Map());
+  return Promise.all(rows.map(async item => {
     try {
-      return await fetchQuote(item);
+      const symbol = cleanSymbol(item.symbol);
+      const spark = sparkRows.get(symbol);
+      return spark ? await sparkQuoteToQuote(item, spark) : await fetchQuote(item);
     } catch (error) {
       return {
         name: item.name || item.symbol || "",
@@ -266,77 +344,68 @@ async function quotesResponse() {
       };
     }
   }));
-  const groups = await Promise.all(config.groups.map(async group => {
-    const symbols = Array.isArray(group.symbols) ? group.symbols.filter(Boolean) : [];
-    const quotes = await quoteItems(symbols);
-    return { name: group.name || "\u672a\u547d\u540d", editable: false, quotes };
-  }));
-  const watchlists = await Promise.all((config.watchlists || []).map(async list => {
-    const quotes = await quoteItems(Array.isArray(list.symbols) ? list.symbols.filter(Boolean) : []);
-    return { id: list.id, name: list.name, locked: Boolean(list.locked), quotes };
-  }));
+}
 
-  const btcQuote = await (async () => {
-    try {
-      return await fetchQuote(WIND_BTC_QUOTE);
-    } catch (error) {
-      return {
-        name: WIND_BTC_QUOTE.name,
-        symbol: WIND_BTC_QUOTE.symbol,
-        type: WIND_BTC_QUOTE.type,
-        ok: false,
-        error: error.message,
-      };
-    }
-  })();
+async function quotesResponse() {
+  const config = await readConfig();
+  const groupItems = config.groups.flatMap(group => Array.isArray(group.symbols) ? group.symbols.filter(Boolean) : []);
+  const watchlistItems = (config.watchlists || []).flatMap(list => Array.isArray(list.symbols) ? list.symbols.filter(Boolean) : []);
+  const uniqueItems = [];
+  const seenSymbols = new Set();
+  for (const item of [...groupItems, ...watchlistItems, WIND_BTC_QUOTE]) {
+    const symbol = cleanSymbol(item.symbol);
+    if (!symbol || seenSymbols.has(symbol)) continue;
+    seenSymbols.add(symbol);
+    uniqueItems.push(item);
+  }
+  const quoteRows = await fetchQuotes(uniqueItems);
+  const quotesBySymbol = new Map(quoteRows.map(quote => [cleanSymbol(quote.symbol), quote]));
+  const quoteForItem = item => {
+    const quote = quotesBySymbol.get(cleanSymbol(item.symbol));
+    return quote ? { ...quote, name: item.name || quote.name, type: item.type || quote.type, shares: Number(item.shares), cost: Number(item.cost) } : {
+      name: item.name || item.symbol || "",
+      symbol: item.symbol || "",
+      type: item.type || marketType(cleanSymbol(item.symbol || "")),
+      ok: false,
+      error: "quote unavailable",
+    };
+  };
+  const groups = config.groups.map(group => {
+    const symbols = Array.isArray(group.symbols) ? group.symbols.filter(Boolean) : [];
+    const quotes = symbols.map(quoteForItem);
+    return { name: group.name || "\u672a\u547d\u540d", editable: false, quotes };
+  });
+  const watchlists = (config.watchlists || []).map(list => {
+    const quotes = (Array.isArray(list.symbols) ? list.symbols.filter(Boolean) : []).map(quoteForItem);
+    return { id: list.id, name: list.name, locked: Boolean(list.locked), quotes };
+  });
 
   const futuresGroup = groups.find(group => group.name === "\u671f\u8ca8");
-  if (futuresGroup) futuresGroup.quotes = [...futuresGroup.quotes, btcQuote];
-  else groups.push({ name: "\u671f\u8ca8", editable: false, quotes: [btcQuote] });
+  const btcQuote = quoteForItem(WIND_BTC_QUOTE);
+  if (futuresGroup && !futuresGroup.quotes.some(quote => quote.symbol === WIND_BTC_QUOTE.symbol)) futuresGroup.quotes = [...futuresGroup.quotes, btcQuote];
+  else if (!futuresGroup) groups.push({ name: "\u671f\u8ca8", editable: false, quotes: [btcQuote] });
 
   return { refreshSeconds: config.refreshSeconds, fetchedAt: new Date().toISOString(), groups, watchlists };
 }
 
 async function globalMarketOptionsResponse() {
-  const options = await Promise.all(GLOBAL_MARKET_OPTIONS.map(async option => {
-    try {
-      return await fetchQuote(option);
-    } catch (error) {
-      return {
-        name: option.name,
-        symbol: option.symbol,
-        type: option.type,
-        ok: false,
-        error: error.message,
-      };
-    }
-  }));
+  const options = await fetchQuotes(GLOBAL_MARKET_OPTIONS);
   return { fetchedAt: new Date().toISOString(), options };
 }
 
 async function marketWindResponse() {
   const config = await readConfig();
-  const slots = await Promise.all((config.marketWind?.slots || []).map(async slot => {
-    if (!slot) return null;
-    try {
-      return { ...slot, ...(await fetchQuote(slot)) };
-    } catch (error) {
-      return { ...slot, ok: false, error: error.message };
-    }
-  }));
+  const slotRows = config.marketWind?.slots || [];
+  const quotes = await fetchQuotes(slotRows.filter(Boolean));
+  let quoteIndex = 0;
+  const slots = slotRows.map(slot => slot ? { ...slot, ...quotes[quoteIndex++] } : null);
   return { fetchedAt: new Date().toISOString(), slots, groups: cloneMarketWindGroups() };
 }
 
 async function marketWindOptionsResponse() {
   const groups = await Promise.all(cloneMarketWindGroups().map(async group => ({
     name: group.name,
-    options: await Promise.all(group.options.map(async option => {
-      try {
-        return { ...option, group: group.name, ...(await fetchQuote(option)) };
-      } catch (error) {
-        return { ...option, group: group.name, ok: false, error: error.message };
-      }
-    })),
+    options: (await fetchQuotes(group.options)).map((quote, index) => ({ ...group.options[index], group: group.name, ...quote })),
   })));
   return { fetchedAt: new Date().toISOString(), groups };
 }

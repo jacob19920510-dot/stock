@@ -1,11 +1,12 @@
 const fs = require("node:fs");
 const path = require("node:path");
 
-const CACHE_TTL_MS = 60 * 1000;
-const FEED_TIMEOUT_MS = 8000;
-const IMAGE_TIMEOUT_MS = 4000;
+const CACHE_TTL_MS = 5 * 60 * 1000;
+const FEED_TIMEOUT_MS = 5000;
+const IMAGE_TIMEOUT_MS = 1200;
 const API_TIMEOUT_MS = 8000;
-const MAX_ARTICLES = 36;
+const MAX_ARTICLES = 24;
+const MAX_ENRICHED_IMAGES = 8;
 const MARKETAUX_API_KEY = readMarketauxApiKey();
 
 const cache = new Map();
@@ -215,10 +216,16 @@ async function fetchArticleImage(url) {
 
 async function enrichArticleImages(articles) {
   const rows = articles.slice();
+  let enrichedCount = rows.filter(article => article.image).length;
   const chunkSize = 8;
   for (let index = 0; index < rows.length; index += chunkSize) {
     const chunk = rows.slice(index, index + chunkSize);
-    const images = await Promise.all(chunk.map(article => article.image ? Promise.resolve(article.image) : fetchArticleImage(article.url)));
+    const images = await Promise.all(chunk.map(article => {
+      if (article.image) return Promise.resolve(article.image);
+      if (enrichedCount >= MAX_ENRICHED_IMAGES) return Promise.resolve("");
+      enrichedCount += 1;
+      return fetchArticleImage(article.url);
+    }));
     images.forEach((image, offset) => {
       if (image) {
         rows[index + offset].image = image;
