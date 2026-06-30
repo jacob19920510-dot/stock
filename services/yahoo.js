@@ -1,4 +1,4 @@
-const { readConfig } = require("../config");
+const { readConfig, readGlobalMarket } = require("../config");
 const { hasChinese, twName, twUniverse, twseCodeQuery, twSharesOutstanding } = require("./twse");
 const { GLOBAL_MARKET_OPTIONS } = require("../globalMarket");
 const { cloneMarketWindGroups } = require("../windMarket");
@@ -391,6 +391,15 @@ async function quotesResponse() {
 async function globalMarketOptionsResponse() {
   const options = await fetchQuotes(GLOBAL_MARKET_OPTIONS);
   return { fetchedAt: new Date().toISOString(), options };
+}
+
+async function globalMarketResponse() {
+  const state = await readGlobalMarket();
+  const slotRows = state.slots || [];
+  const quotes = await fetchQuotes(slotRows.filter(Boolean));
+  let quoteIndex = 0;
+  const slots = slotRows.map(slot => slot ? { ...slot, ...quotes[quoteIndex++] } : null);
+  return { fetchedAt: new Date().toISOString(), slots, options: state.options || [] };
 }
 
 async function marketWindResponse() {
@@ -846,6 +855,7 @@ module.exports = {
   fetchQuote,
   quotesResponse,
   rankingResponse,
+  globalMarketResponse,
   globalMarketOptionsResponse,
   marketWindResponse,
   marketWindOptionsResponse,

@@ -2,8 +2,8 @@ const http = require("node:http");
 const fs = require("node:fs/promises");
 const path = require("node:path");
 
-const { readConfig, readWatchlists, createWatchlist, updateWatchlist, deleteWatchlist, addWatchSymbol, removeWatchSymbol, reorderWatchSymbols, reorderWatchlists, readGlobalMarket, updateGlobalMarket, updateMarketWind, readCurrency, updateCurrency, readProfile, updateProfile } = require("./config");
-const { quotesResponse, rankingResponse, yahooSearch, detailResponse, globalMarketOptionsResponse, marketWindResponse, marketWindOptionsResponse, currencyResponse, currencyOptionsResponse } = require("./services/yahoo");
+const { readConfig, readWatchlists, createWatchlist, updateWatchlist, deleteWatchlist, addWatchSymbol, removeWatchSymbol, reorderWatchSymbols, reorderWatchlists, updateGlobalMarket, updateMarketWind, readCurrency, updateCurrency, readProfile, updateProfile } = require("./config");
+const { quotesResponse, rankingResponse, yahooSearch, detailResponse, globalMarketResponse, globalMarketOptionsResponse, marketWindResponse, marketWindOptionsResponse, currencyResponse, currencyOptionsResponse } = require("./services/yahoo");
 const { twUniverse } = require("./services/twse");
 const { newsResponse } = require("./services/news");
 
@@ -80,7 +80,7 @@ const server = http.createServer(async (req, res) => {
     if (req.method === "GET" && url.pathname === "/api/config") return json(res, 200, await readConfig());
     if (req.method === "GET" && url.pathname === "/api/profile") return json(res, 200, await readProfile());
     if (req.method === "POST" && url.pathname === "/api/profile") return json(res, 200, await updateProfile(req));
-    if (req.method === "GET" && url.pathname === "/api/global-market") return json(res, 200, await readGlobalMarket());
+    if (req.method === "GET" && url.pathname === "/api/global-market") return json(res, 200, await globalMarketResponse());
     if (req.method === "GET" && url.pathname === "/api/global-market/options") return json(res, 200, await globalMarketOptionsResponse());
     if (req.method === "GET" && url.pathname === "/api/market-wind") return json(res, 200, await marketWindResponse());
     if (req.method === "GET" && url.pathname === "/api/market-wind/options") return json(res, 200, await marketWindOptionsResponse());
